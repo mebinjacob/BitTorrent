@@ -3,12 +3,14 @@ import java.util.Scanner;
 /**
  * @author Mebin Jacob
  */
+// This is our client entrypoint
 public class peerProcess { // naming convention violated due to project requirement..
-	
+
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
 		int portNumber = scan.nextInt();
-		int peerID = scan.nextInt();
+		int peerId = scan.nextInt();
+		Configuration.commonProp.put("peerId", String.valueOf(peerId));
 		scan.close();
 	}
 	
