@@ -23,7 +23,7 @@ public class Peer {
 	private static byte[] bitfields = null; 
 	
 	//static block 
-	{
+	static {
 		String peerId = Configuration.commonProp.get("peerId");
 		File f = new File(peerId);
 		long noOfPieces = 0;
