@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -17,6 +18,10 @@ public class Peer {
 	 */
 	private static Map<Peer, Boolean> map = new HashMap<Peer, Boolean>();
 	
+	private HashSet<Peer> set = new HashSet<Peer>(); // Set of Peers that have shown interest in my data.
+	
+	private HashSet<Peer> preferredNeighbors = new HashSet<Peer>(); // Set of Peers that are the preferred neighbors.
+	
 	/**
 	 * Bitfields corresponding to a data file that is being shared.
 	 */
@@ -24,12 +29,12 @@ public class Peer {
 	
 	//static block 
 	static {
-		String peerId = Configuration.commonProp.get("peerId");
+		String peerId = Configuration.getComProp().get("peerId");
 		File f = new File(peerId);
 		long noOfPieces = 0;
 		if(f.exists()) // This peer is the original uploader..
 		{
-			int pieceSize = Integer.parseInt(Configuration.peerProp.get("PieceSize"));
+			int pieceSize = Integer.parseInt(Configuration.getPeerProp().get("PieceSize"));
 			if(f.length()%pieceSize == 0){
 				noOfPieces = f.length()/pieceSize;
 			}
@@ -91,7 +96,7 @@ if(input.equals("Bye"))
 
 	}
 
-	public void receiveHandshakeMsg(Peer B) {
+	public void receiveHandshakeMsg() {
 		// TODO: check whether Peer B is the right neighbor.
 		synchronized (map) {
 			if (map.containsKey(this) && map.get(this) == false) {

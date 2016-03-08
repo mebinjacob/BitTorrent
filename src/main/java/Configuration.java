@@ -14,14 +14,32 @@ import java.util.logging.Logger;
 public class Configuration {
 	private static final Logger LOGGER = Logger.getLogger(Configuration.class.getName());
 	
-	public static Map<String, String> peerProp = new HashMap<String, String>();
-	public static Map<String, String> commonProp = new HashMap<String, String>();
+	private static Map<Integer, String> peerProp = null;
+	private static Map<String, String> commonProp = null;
+	private static Configuration conf = null;
+	public static Map<String, String> getComProp(){
+		if(conf == null){
+			conf = new Configuration();
+		}
+		return commonProp;
+	}
+	
+	public static Map<Integer, String> getPeerProp(){
+		if(conf == null){
+			conf = new Configuration();
+		}
+		return peerProp;
+	}
+	
 	
 	private String peerInfoFileName = "PeerInfo.cfg";
 	private String commonFileName = "Common.cfg";
-	public Configuration() throws IOException{
+	public Configuration() {
 		FileInputStream fis;
 		try {
+			peerProp = new HashMap<Integer, String>();
+			commonProp = new HashMap<String, String>();
+			File file = new File(commonFileName);
 			fis = new FileInputStream(new File(commonFileName));
 			//Construct BufferedReader from InputStreamReader
 			BufferedReader br = new BufferedReader(new InputStreamReader(fis));
@@ -40,11 +58,15 @@ public class Configuration {
 			String line1 = null;
 			while ((line1 = br.readLine()) != null) {
 				String[] split = line1.split(" ");
-				peerProp.put(split[0], line1);
+				System.out.println("value being put is " + split[0]);
+				peerProp.put(Integer.parseInt(split[0]), line1);
 			}
 		 
 			br.close();
 		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

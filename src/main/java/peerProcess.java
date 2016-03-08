@@ -1,4 +1,7 @@
+	import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Map;
 import java.util.Scanner;
 /**
  * @author Mebin Jacob
@@ -8,10 +11,18 @@ public class peerProcess { // naming convention violated due to project requirem
 
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
-		int portNumber = scan.nextInt();
-		int peerId = scan.nextInt();
-		Configuration.commonProp.put("peerId", String.valueOf(peerId));
+		int peerId = Integer.valueOf(args[0]);
+		Configuration.getComProp().put("peerId", String.valueOf(peerId));
 		scan.close();
+		//create a server socket 
+		String string = Configuration.getPeerProp().get(peerId);
+		System.out.println(string);
+		String portNo = string.split(" ")[2];
+		peerProcess p = new peerProcess();
+		p.clientConnect(peerId);
+		p.acceptConnection(Integer.valueOf(portNo));
+		//handshake
+		
 	}
 	
 	/**
@@ -29,5 +40,33 @@ public class peerProcess { // naming convention violated due to project requirem
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
+	}
+	
+	/**
+	 * Connects to all available clients. PeerId is self peerid as to not to connect to self.
+	 */
+	public void clientConnect(int peerId){
+		Map<Integer, String> peerProp = Configuration.getPeerProp();
+		for(Integer s:peerProp.keySet()){
+			if(s != peerId){
+				String line = peerProp.get(s);
+				String[] split = line.split(" ");
+				String host = split[1];
+				String port = split[2];
+				String peerid = split[0];
+				try {
+					Socket socket = new Socket(host, Integer.parseInt(port));
+					new PeerThread(socket).start();
+				} catch (NumberFormatException | IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+				
+		}
+	}
+	@Override
+	public void finalize(){
+		
 	}
 }
