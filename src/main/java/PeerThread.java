@@ -6,29 +6,43 @@ import java.util.logging.Logger;
  *         it's state.
  */
 public class PeerThread extends Thread {
-	private static final Logger LOGGER = Logger.getLogger(PeerThread.class
-			.getName());
+	private static final Logger LOGGER = MyLogger.getMyLogger();
 	private Socket socket = null;
 	private boolean isClient = false;
 	private Peer p = null;
-	public PeerThread(Socket s, boolean client) {
+
+	public PeerThread(Socket s, boolean client, int id) {
 		this.socket = s;
 		this.isClient = client;
 		p = new Peer(socket);
-		p.sendHandshakeMsg();
-		p.receiveHandshakeMsg();
-		//should have all peerid's of receiver and sender here, hence do logging 
-		String peerId = "1";
-		if(isClient == true){
-			LOGGER.info(Configuration.getComProp().get("peerId") + " makes a connection to Peer " + peerId);
+		if (isClient){
+			p.setId(id);
+			p.setClient(true);
+			p.sendHandshakeMsg();
+			p.receiveHandshakeMsg();
 		}
 		else{
-			LOGGER.info(Configuration.getComProp().get("peerId") + " is connected from " + peerId);
+			int peerId = p.receiveHandshakeMsg();
+			p.setId(peerId);
+			p.sendHandshakeMsg();
+			
+		}
+		
+		System.out.println("It comes here 3 ");
+		// should have all peerid's of receiver and sender here, hence do
+		// logging
+		
+		if (isClient == true) {
+			LOGGER.info(Configuration.getComProp().get("peerId")
+					+ " makes a connection to Peer " + p.getId());
+		} else {
+			LOGGER.info(Configuration.getComProp().get("peerId")
+					+ " is connected from " + p.getId());
 		}
 	}
 
 	@Override
 	public void run() {
-		
+
 	}
 }

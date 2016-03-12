@@ -11,8 +11,7 @@ import java.util.logging.Logger;
 // This is our client entrypoint
 public class peerProcess { // naming convention violated due to project
 							// requirement..
-	private static final Logger LOGGER = Logger.getLogger(peerProcess.class
-			.getName());
+	private static final Logger LOGGER = MyLogger.getMyLogger();
 
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
@@ -32,8 +31,6 @@ public class peerProcess { // naming convention violated due to project
 		peerProcess p = new peerProcess();
 		p.clientConnect(peerId);
 		p.acceptConnection(Integer.valueOf(portNo));
-		// handshake
-
 	}
 
 	/**
@@ -46,7 +43,7 @@ public class peerProcess { // naming convention violated due to project
 
 		try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
 			while (listening) {
-				new PeerThread(serverSocket.accept(), false).start();
+				new PeerThread(serverSocket.accept(), false, -1).start();
 			}
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
@@ -68,7 +65,7 @@ public class peerProcess { // naming convention violated due to project
 				String peerid = split[0];
 				try {
 					Socket socket = new Socket(host, Integer.parseInt(port));
-					new PeerThread(socket, true).start();
+					new PeerThread(socket, true, Integer.parseInt(peerid)).start();
 				} catch (NumberFormatException | IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
