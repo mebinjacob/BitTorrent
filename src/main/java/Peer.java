@@ -171,6 +171,7 @@ public class Peer {
 		return -1;
 	}
 
+    // Sends a Message of type Bitfiled
 	public void sendBitfieldMsg() {
 		try {
 			byte[] actualMessage = MessagesUtil.getActualMessage(mybitfield,
@@ -207,7 +208,8 @@ public class Peer {
 		}
 		return false;
 	}
-	
+
+    // Sends a Message of type Interesed
 	public void sendInterestedMsg(){
 		byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.INTERESTED);
 		try {
@@ -220,4 +222,81 @@ public class Peer {
 		}
 	}
 
+    // Sends a Message of type NotInterested
+    public void sendNotInterestedMsg(){
+        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.NOT_INTERESTED);
+        try {
+            out.write(actualMessage);
+            out.flush();
+
+        } catch (IOException e) {
+            System.out.println("io exception in reading " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Sends a Message of type Have
+    public void sendHaveMsg(){
+        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.HAVE);
+        try {
+            out.write(actualMessage);
+            out.flush();
+
+        } catch (IOException e) {
+            System.out.println("io exception in reading " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Sends a Message of type Choke
+    public void sendChokeMsg(){
+        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.CHOKE);
+        try {
+            out.write(actualMessage);
+            out.flush();
+
+        } catch (IOException e) {
+            System.out.println("io exception in reading " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Sends a Message of type UnChoke
+    public void sendUnChokeMsg(){
+        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.UNCHOKE);
+        try {
+            out.write(actualMessage);
+            out.flush();
+
+        } catch (IOException e) {
+            System.out.println("io exception in reading " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Sends a Message of type Request
+    public void sendRequestMsg(){
+        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.REQUEST);
+        try {
+            out.write(actualMessage);
+            out.flush();
+
+        } catch (IOException e) {
+            System.out.println("io exception in reading " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Sends a Message of type Piece
+    public void sendPieceMsg(){
+        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.PIECE);
+        try {
+            out.write(actualMessage);
+            out.flush();
+
+        } catch (IOException e) {
+            System.out.println("io exception in reading " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
