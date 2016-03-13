@@ -9,6 +9,7 @@ public class LogFormatter extends Formatter {
 		buf.append(calcDate(rc.getMillis()));
 		buf.append(" ");
 		buf.append(rc.getMessage());
+		buf.append("\n");
 		return buf.toString();
 	}
 

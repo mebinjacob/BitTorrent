@@ -11,9 +11,9 @@ public class Constants {
 		BITFIELD((byte)5), 
 		REQUEST((byte)6), 
 		PIECE((byte)7);
-		byte n = -1;
+		byte value = -1;
 		private ActualMessageTypes(byte n){
-			this.n = n;
+			this.value = n;
 		}
 	}
 }

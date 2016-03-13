@@ -42,7 +42,7 @@ public class Peer {
 
 	private int id;
 
-	public void setId(int id) {
+	public void setId(final int id) {
 		this.id = id;
 	}
 
@@ -53,25 +53,41 @@ public class Peer {
 	/**
 	 * Bitfields corresponding to a data file that is being shared.
 	 */
-	private static byte[] bitfields = null;
+	private static byte[] mybitfield = null;
 
+	/**
+	 * Peers bit field message.
+	 */
+	private byte[] bitFieldMsg = null;
 	// static block
 	static {
-		String peerId = Configuration.getComProp().get("peerId");
-		File f = new File(peerId);
+		String fileName = Configuration.getComProp().get("FileName");
+		String fileSizeStr = Configuration.getComProp().get("FileSize");
+		Integer fileSize = Integer.parseInt(fileSizeStr);
 		long noOfPieces = 0;
-		if (f.exists()) // This peer is the original uploader..
-		{
-			int pieceSize = Integer.parseInt(Configuration.getPeerProp().get(
-					"PieceSize"));
-			if (f.length() % pieceSize == 0) {
-				noOfPieces = f.length() / pieceSize;
-			} else {
-				noOfPieces = f.length() / pieceSize + 1;
-			}
+		int pieceSize = Integer.parseInt(Configuration.getComProp().get(
+				"PieceSize"));
+
+		if (fileSize % pieceSize == 0) {
+			noOfPieces = fileSize / pieceSize;
+		} else {
+			noOfPieces = fileSize / pieceSize + 1;
 		}
 		double bl = Math.ceil(noOfPieces / 8.0f);
-		bitfields = new byte[(int) bl];
+		mybitfield = new byte[(int) bl];
+		File f = new File(fileName);
+		if (f.exists()) // This peer is the original uploader..
+		{
+			if (f.length() != fileSize) {
+				System.out.println("The file size mentioned in common cfg is "
+						+ fileSize);
+				System.out.println("Actual file size is " + f.length());
+				System.exit(-1);
+			}else{
+				Arrays.fill(mybitfield, (byte)1);
+			}
+		}
+
 	}
 
 	private Socket socket = null;
@@ -126,7 +142,6 @@ public class Peer {
 				LOGGER.severe("Send handshake failed !! " + e.getMessage());
 				e.printStackTrace();
 			}
-			System.out.println("This t");
 		}
 
 	}
@@ -144,8 +159,7 @@ public class Peer {
 				if (map.containsKey(peerId) && map.get(peerId) == false) {
 					map.put(peerId, true);
 					System.out.println("verified for id " + peerId);
-				}
-				else{
+				} else {
 					System.out.println("Screwed!!!");
 				}
 			}
@@ -159,14 +173,51 @@ public class Peer {
 
 	public void sendBitfieldMsg() {
 		try {
-			byte[] actualMessage = MessagesUtil.getActualMessage(bitfields,
+			byte[] actualMessage = MessagesUtil.getActualMessage(mybitfield,
 					Constants.ActualMessageTypes.BITFIELD);
 			out.write(actualMessage);
 		} catch (IOException e) {
+			System.out.println("Bitfield message sending failed!!!");
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		;
+	}
+
+	public void readBitfieldMsg() {
+		bitFieldMsg = MessagesUtil.readActualMessage(in, Constants.ActualMessageTypes.BITFIELD);
+	}
+	
+	public boolean isInterested(){
+		//me xor peer
+		//result xor peer
+		//if not 0 then interested 
+		int i = 0;
+		byte[] result = new byte[mybitfield.length];
+		for(byte byt:mybitfield){
+			result[i] = (byte) (byt^bitFieldMsg[i]);
+			i++;
+		}
+		i=0;
+		for(byte b:bitFieldMsg){
+			System.out.print(b + " ");
+			result[i] = (byte) (result[i]^b);
+			if(result[i] != 0){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void sendInterestedMsg(){
+		byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.INTERESTED);
+		try {
+			out.write(actualMessage);
+			out.flush();
+			
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 }

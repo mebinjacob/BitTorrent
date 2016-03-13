@@ -27,7 +27,11 @@ public class PeerThread extends Thread {
 			p.sendHandshakeMsg();
 			
 		}
-		
+		p.sendBitfieldMsg();
+		p.readBitfieldMsg();
+		if(p.isInterested()){
+			p.sendInterestedMsg();
+		}
 		System.out.println("It comes here 3 ");
 		// should have all peerid's of receiver and sender here, hence do
 		// logging

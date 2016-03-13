@@ -3,7 +3,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.logging.Logger;
 
 /**
  * @author Mebin Jacob
@@ -11,8 +10,6 @@ import java.util.logging.Logger;
 // This is our client entrypoint
 public class peerProcess { // naming convention violated due to project
 							// requirement..
-	private static final Logger LOGGER = MyLogger.getMyLogger();
-
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
 		int peerId = Integer.valueOf(args[0]);
