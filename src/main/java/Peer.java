@@ -17,6 +17,19 @@ public class Peer {
 			.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	private boolean client = false;
 
+	/**
+	 * Downloading Rate from this peer. Initially set to 0.
+	 */
+	private int downloadingRate = 0;
+	
+	public int getDownloadingRate(){
+		return downloadingRate;
+	}
+	
+	public void setDownloadingRate(int d){
+		downloadingRate = d;
+	}
+	
 	public void setClient(boolean v) {
 		client = v;
 	}
@@ -55,6 +68,10 @@ public class Peer {
 	 */
 	private static byte[] mybitfield = null;
 
+	
+	public static byte[] getMyBitField(){
+		return mybitfield;
+	}
 	/**
 	 * Peers bit field message.
 	 */
@@ -221,7 +238,7 @@ public class Peer {
 			e.printStackTrace();
 		}
 	}
-
+	
     // Sends a Message of type NotInterested
     public void sendNotInterestedMsg(){
         byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.NOT_INTERESTED);

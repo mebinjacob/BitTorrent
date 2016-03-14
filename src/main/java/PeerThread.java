@@ -9,8 +9,22 @@ public class PeerThread extends Thread {
 	private static final Logger LOGGER = MyLogger.getMyLogger();
 	private Socket socket = null;
 	private boolean isClient = false;
+	private boolean stop = false;
+	
 	private Peer p = null;
 
+	public Peer getPeer(){
+		return p;
+	}
+	
+	public boolean isStop(){
+		return stop;
+	}
+	
+	public void setStop(boolean v){
+		stop = v;
+	}
+	
 	public PeerThread(Socket s, boolean client, int id) {
 		this.socket = s;
 		this.isClient = client;
@@ -31,7 +45,10 @@ public class PeerThread extends Thread {
 		p.readBitfieldMsg();
 		if(p.isInterested()){
 			p.sendInterestedMsg();
+		}else{
+			p.sendNotInterestedMsg();
 		}
+		
 		System.out.println("It comes here 3 ");
 		// should have all peerid's of receiver and sender here, hence do
 		// logging
