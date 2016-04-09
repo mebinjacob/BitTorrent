@@ -59,4 +59,13 @@ public class MessagesUtil {
 		}
 		return data;
 	}
+	
+	public static Constants.ActualMessageTypes getMsgType(byte[] msgStat){
+		for(Constants.ActualMessageTypes  actMsgType : Constants.ActualMessageTypes.values()){
+			if(actMsgType.value == msgStat[4]){
+				return actMsgType;
+			}
+		}
+		return null;
+	}
 }

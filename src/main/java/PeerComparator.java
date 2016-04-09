@@ -1,12 +1,13 @@
 import java.util.Comparator;
 
 
-public class PeerComparator implements Comparator<PeerThread> {
+public class PeerComparator<T extends Peer> implements Comparator<Peer> {
 
 	@Override
-	public int compare(PeerThread o1, PeerThread o2) {
+	public int compare(Peer o1, Peer o2) {
 
-		return (o1.getPeer().getDownloadingRate() - o2.getPeer().getDownloadingRate()); // since it's a min heap
+		return (o1.getDownloadingRate() - o2.getDownloadingRate()); // since it's a min heap
 	}
+
 
 }

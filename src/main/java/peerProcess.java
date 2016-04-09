@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Mebin Jacob
@@ -23,8 +25,12 @@ public class peerProcess {
 
 	PeerComparator peerComparator = new PeerComparator();
 
-	private TreeSet<PeerThread> peersTrees = new TreeSet<PeerThread>(peerComparator);
+	private TreeSet<PeerThread> peersTrees = new TreeSet<PeerThread>(
+			peerComparator);
 
+	List<Peer> unchockeList = null; // interested and unchoked peers
+	List<Peer> chokeList = null; // interested and chocked peers
+	
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
 		int peerId = Integer.valueOf(args[0]);
@@ -40,9 +46,16 @@ public class peerProcess {
 			throw new RuntimeException("Problems with creating the log files");
 		}
 		String portNo = string.split(" ")[2];
-		peerProcess p = new peerProcess();
-		p.clientConnect(peerId);
-		p.acceptConnection(Integer.valueOf(portNo));
+		peerProcess peer = new peerProcess();
+		peer.clientConnect(peerId);
+		peer.acceptConnection(Integer.valueOf(portNo));
+		peerProcess peerProcessObj = new peerProcess();
+		Map<String, String> comProp = Configuration.getComProp();
+		int m = Integer.parseInt(comProp.get("OptimisticUnchokingInterval"));
+		int k = Integer.parseInt(comProp.get("NumberOfPreferredNeighbors")); 
+		int p = Integer.parseInt(comProp.get("UnchokingInterval"));
+		peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
+		peerProcessObj.determinePreferredNeighbours(k, p);
 	}
 
 	/**
@@ -67,7 +80,7 @@ public class peerProcess {
 
 	/**
 	 * Connects to all available clients. PeerId is self peerid as to not to
-	 * connect to self.
+	 * connect to self or anyone with greater peer id.
 	 */
 	public void clientConnect(int peerId) {
 		Map<Integer, String> peerProp = Configuration.getPeerProp();
@@ -94,7 +107,27 @@ public class peerProcess {
 	}
 
 	private final ScheduledExecutorService scheduler = Executors
-			.newScheduledThreadPool(1);
+			.newScheduledThreadPool(2);
+	
+	/**
+	 * Determine optimistically unchocked neighbour every m seconds.
+	 */
+	public void determineOptimisticallyUnchokedNeighbour(final int m){
+		final Runnable optimisticallyUnchockedNeighbourDeterminer = new Runnable(){
+
+			@Override
+			public void run() {
+				 // select optimistically unchocked neighbour from 
+				int randIndex = ThreadLocalRandom.current().nextInt(0, chokeList.size());
+				Peer peer = chokeList.get(randIndex);
+				peer.sendUnChokeMsg();
+				peer.setChocked(false); // so that it can expect request message
+			}
+			
+		};
+		scheduler.scheduleAtFixedRate(optimisticallyUnchockedNeighbourDeterminer, m, m, SECONDS);
+	}
+	
 
 	/**
 	 * Determines k preferred neighbors every p seconds
@@ -103,49 +136,75 @@ public class peerProcess {
 
 		final Runnable kNeighborDeterminer = new Runnable() {
 			public void run() {
-				// determine k preferred neighbors
-				Iterator<PeerThread> descendingIterator = peersTrees
-						.descendingIterator();
-				int i = 0;
-				List<PeerThread> kPeerThreads = new ArrayList<PeerThread>();
-				while (descendingIterator.hasNext() && i < k) {
-					PeerThread nextPeer = descendingIterator.next();
-					kPeerThreads.add(nextPeer);
-					i++;
+				// select k preferrred neighbours from neighbours that are
+				// interested in my data.
+				// calculate the downloading rate from each peer. set it
+				// initially to 0.
+
+				// Select k preferred neighbours, when it has all elements too
+				// it should be taken care of..
+				PriorityBlockingQueue<Peer> interestedList = Peer.interestedNeighboursinMe;
+				// select k which has highest download rate
+				Iterator<Peer> iterator = interestedList.iterator();
+				unchockeList = new ArrayList<Peer>();
+				chokeList = new ArrayList<Peer>();
+				int count = k;
+				while (iterator.hasNext()) {
+					Peer next = iterator.next();
+					if (count > 0) {
+						unchockeList.add(next);
+					} else {
+						chokeList.add(next);
+					}
+
+					count--;
 				}
-				System.out.println("beep");
+
+				for (Peer p : unchockeList) {
+					if (p.isChocked()) {
+						p.sendUnChokeMsg(); // now expect recieve message
+						p.setChocked(false);
+					}
+				}
+
+				for (Peer p : chokeList) {
+					if (!p.isChocked()) {
+						p.sendChokeMsg();
+						p.setChocked(true);
+					}
+				}
+
 			}
 		};
 		final ScheduledFuture<?> kNeighborDeterminerHandle = scheduler
-				.scheduleAtFixedRate(kNeighborDeterminer, 2, p, SECONDS);// 2 is
+				.scheduleAtFixedRate(kNeighborDeterminer, p, p, SECONDS);// 2 is
 																			// initial
 																			// delay
-		//need to test
+		// need to test
 		scheduler.schedule(new Runnable() {
 			public void run() {
 				// check if file has downloaded
 				byte[] myBitField = Peer.getMyBitField();
 				boolean result = false;
 				Integer one = new Integer(1);
-				
-				for(byte b:myBitField){
-					if((b & one.byteValue()) != 1)
-					{
+
+				for (byte b : myBitField) {
+					if ((b & one.byteValue()) != 1) {
 						result = false;
 						break;
 					}
 					result = true;
 				}
-				if(result == true){
+				if (result == true) {
 					kNeighborDeterminerHandle.cancel(true);
-					//stop all threads
+					// stop all threads
 					Iterator<PeerThread> descendingIterator = peersTrees
 							.descendingIterator();
-					while(descendingIterator.hasNext()){
+					while (descendingIterator.hasNext()) {
 						PeerThread p = descendingIterator.next();
 						// ask threads to stop gracefully
 						p.setStop(true);
-						
+
 					}
 				}
 				

@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.logging.Logger;
 
 /**
@@ -16,7 +18,15 @@ public class Peer {
 	private static final Logger LOGGER = Logger
 			.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	private boolean client = false;
-
+	
+	public static PriorityBlockingQueue<Peer> interestedNeighboursinMe = new PriorityBlockingQueue<Peer>(10, new PeerComparator<Peer>());
+	
+	public static Map<Integer, Peer> notInterestedNeighboursinMe = new ConcurrentHashMap<Integer, Peer>(); 
+	
+	public static Map<Integer, Peer> chockedMap = new HashMap<Integer, Peer>();
+	
+	public static Map<Integer, Peer> unchockedMap = new HashMap<Integer, Peer>();
+	
 	/**
 	 * Downloading Rate from this peer. Initially set to 0.
 	 */
@@ -289,6 +299,16 @@ public class Peer {
             System.out.println("io exception in reading " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    private boolean chocked;
+    
+    public void setChocked(boolean n){
+    	chocked = n;
+    }
+    
+    public boolean isChocked(){
+    	return chocked;
     }
 
     // Sends a Message of type Request
