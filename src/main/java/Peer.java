@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -18,28 +19,29 @@ public class Peer {
 	private static final Logger LOGGER = Logger
 			.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	private boolean client = false;
-	
-	public static PriorityBlockingQueue<Peer> interestedNeighboursinMe = new PriorityBlockingQueue<Peer>(10, new PeerComparator<Peer>());
-	
-	public static Map<Integer, Peer> notInterestedNeighboursinMe = new ConcurrentHashMap<Integer, Peer>(); 
-	
+
+	public static PriorityBlockingQueue<Peer> interestedNeighboursinMe = new PriorityBlockingQueue<Peer>(
+			10, new PeerComparator<Peer>());
+
+	public static Map<Integer, Peer> notInterestedNeighboursinMe = new ConcurrentHashMap<Integer, Peer>();
+
 	public static Map<Integer, Peer> chockedMap = new HashMap<Integer, Peer>();
-	
+
 	public static Map<Integer, Peer> unchockedMap = new HashMap<Integer, Peer>();
-	
+
 	/**
 	 * Downloading Rate from this peer. Initially set to 0.
 	 */
 	private int downloadingRate = 0;
-	
-	public int getDownloadingRate(){
+
+	public int getDownloadingRate() {
 		return downloadingRate;
 	}
-	
-	public void setDownloadingRate(int d){
+
+	public void setDownloadingRate(int d) {
 		downloadingRate = d;
 	}
-	
+
 	public void setClient(boolean v) {
 		client = v;
 	}
@@ -65,6 +67,16 @@ public class Peer {
 
 	private int id;
 
+	private int requestedIndex;
+	
+	public void setRequestedIndex(int i){
+		requestedIndex = i;
+	}
+	
+	public int getRequestedIndex(){
+		return requestedIndex;
+	}
+	
 	public void setId(final int id) {
 		this.id = id;
 	}
@@ -78,10 +90,31 @@ public class Peer {
 	 */
 	private static byte[] mybitfield = null;
 
-	
-	public static byte[] getMyBitField(){
+	public static byte[] getMyBitField() {
 		return mybitfield;
 	}
+
+	/**
+	 * Bit field already requested.
+	 */
+	private static byte[] bitFieldRequested = null;
+
+	public static byte[] getBitFieldRequested() {
+		return bitFieldRequested;
+	}
+
+	public static void setBitFieldRequested(int index, int i){
+		synchronized (bitFieldRequested) {
+			bitFieldRequested[index] |= (1<<i);
+		}
+	}
+	
+	public static void removeSetBitFieldRequested(int index, int i){
+		synchronized (bitFieldRequested) {
+			bitFieldRequested[index] ^= 1 << i;
+		}
+	}
+	
 	/**
 	 * Peers bit field message.
 	 */
@@ -102,6 +135,7 @@ public class Peer {
 		}
 		double bl = Math.ceil(noOfPieces / 8.0f);
 		mybitfield = new byte[(int) bl];
+		bitFieldRequested = new byte[(int) bl];
 		File f = new File(fileName);
 		if (f.exists()) // This peer is the original uploader..
 		{
@@ -110,8 +144,8 @@ public class Peer {
 						+ fileSize);
 				System.out.println("Actual file size is " + f.length());
 				System.exit(-1);
-			}else{
-				Arrays.fill(mybitfield, (byte)1);
+			} else {
+				Arrays.fill(mybitfield, (byte) 1);
 			}
 		}
 
@@ -198,7 +232,7 @@ public class Peer {
 		return -1;
 	}
 
-    // Sends a Message of type Bitfiled
+	// Sends a Message of type Bitfiled
 	public void sendBitfieldMsg() {
 		try {
 			byte[] actualMessage = MessagesUtil.getActualMessage(mybitfield,
@@ -212,128 +246,181 @@ public class Peer {
 	}
 
 	public void readBitfieldMsg() {
-		bitFieldMsg = MessagesUtil.readActualMessage(in, Constants.ActualMessageTypes.BITFIELD);
+		bitFieldMsg = MessagesUtil.readActualMessage(in,
+				Constants.ActualMessageTypes.BITFIELD);
 	}
-	
-	public boolean isInterested(){
-		//me xor peer
-		//result xor peer
-		//if not 0 then interested 
+
+	public boolean isInterested() {
+		// me xor peer
+		// result xor peer
+		// if not 0 then interested
 		int i = 0;
 		byte[] result = new byte[mybitfield.length];
-		for(byte byt:mybitfield){
-			result[i] = (byte) (byt^bitFieldMsg[i]);
+		for (byte byt : mybitfield) {
+			result[i] = (byte) (byt ^ bitFieldMsg[i]);
 			i++;
 		}
-		i=0;
-		for(byte b:bitFieldMsg){
+		i = 0;
+		for (byte b : bitFieldMsg) {
 			System.out.print(b + " ");
-			result[i] = (byte) (result[i]^b);
-			if(result[i] != 0){
+			result[i] = (byte) (result[i] ^ b);
+			if (result[i] != 0) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-    // Sends a Message of type Interesed
-	public void sendInterestedMsg(){
-		byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.INTERESTED);
+	// Sends a Message of type Interesed
+	public void sendInterestedMsg() {
+		byte[] actualMessage = MessagesUtil
+				.getActualMessage(Constants.ActualMessageTypes.INTERESTED);
 		try {
 			out.write(actualMessage);
 			out.flush();
-			
+
 		} catch (IOException e) {
 			System.out.println("io exception in reading " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
-	
-    // Sends a Message of type NotInterested
-    public void sendNotInterestedMsg(){
-        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.NOT_INTERESTED);
-        try {
-            out.write(actualMessage);
-            out.flush();
 
-        } catch (IOException e) {
-            System.out.println("io exception in reading " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	// Sends a Message of type NotInterested
+	public void sendNotInterestedMsg() {
+		byte[] actualMessage = MessagesUtil
+				.getActualMessage(Constants.ActualMessageTypes.NOT_INTERESTED);
+		try {
+			out.write(actualMessage);
+			out.flush();
 
-    // Sends a Message of type Have
-    public void sendHaveMsg(){
-        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.HAVE);
-        try {
-            out.write(actualMessage);
-            out.flush();
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
-        } catch (IOException e) {
-            System.out.println("io exception in reading " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	// Sends a Message of type Have
+	public void sendHaveMsg() {
+		byte[] actualMessage = MessagesUtil
+				.getActualMessage(Constants.ActualMessageTypes.HAVE);
+		try {
+			out.write(actualMessage);
+			out.flush();
 
-    // Sends a Message of type Choke
-    public void sendChokeMsg(){
-        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.CHOKE);
-        try {
-            out.write(actualMessage);
-            out.flush();
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
-        } catch (IOException e) {
-            System.out.println("io exception in reading " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	// Sends a Message of type Choke
+	public void sendChokeMsg() {
+		byte[] actualMessage = MessagesUtil
+				.getActualMessage(Constants.ActualMessageTypes.CHOKE);
+		try {
+			out.write(actualMessage);
+			out.flush();
 
-    // Sends a Message of type UnChoke
-    public void sendUnChokeMsg(){
-        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.UNCHOKE);
-        try {
-            out.write(actualMessage);
-            out.flush();
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
-        } catch (IOException e) {
-            System.out.println("io exception in reading " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    private boolean chocked;
-    
-    public void setChocked(boolean n){
-    	chocked = n;
-    }
-    
-    public boolean isChocked(){
-    	return chocked;
-    }
+	// Sends a Message of type UnChoke
+	public void sendUnChokeMsg() {
+		byte[] actualMessage = MessagesUtil
+				.getActualMessage(Constants.ActualMessageTypes.UNCHOKE);
+		try {
+			out.write(actualMessage);
+			out.flush();
 
-    // Sends a Message of type Request
-    public void sendRequestMsg(){
-        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.REQUEST);
-        try {
-            out.write(actualMessage);
-            out.flush();
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
-        } catch (IOException e) {
-            System.out.println("io exception in reading " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	private boolean chocked;
 
-    // Sends a Message of type Piece
-    public void sendPieceMsg(){
-        byte[] actualMessage = MessagesUtil.getActualMessage(Constants.ActualMessageTypes.PIECE);
-        try {
-            out.write(actualMessage);
-            out.flush();
+	public void setChoked(boolean n) {
+		chocked = n;
+	}
 
-        } catch (IOException e) {
-            System.out.println("io exception in reading " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	public boolean isChocked() {
+		return chocked;
+	}
+
+	// Sends a Message of type Request
+	public void sendRequestMsg(int pieceIndex) {
+		byte[] pieceIndexByteArray = Util.intToByteArray(pieceIndex);
+
+		byte[] actualMessage = MessagesUtil.getActualMessage(
+				pieceIndexByteArray, Constants.ActualMessageTypes.REQUEST);
+		try {
+			out.write(actualMessage);
+			out.flush();
+
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	// Sends a Message of type Piece
+	public void sendPieceMsg() {
+		byte[] actualMessage = MessagesUtil
+				.getActualMessage(Constants.ActualMessageTypes.PIECE);
+		try {
+			out.write(actualMessage);
+			out.flush();
+
+		} catch (IOException e) {
+			System.out.println("io exception in reading " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	public int getNextBitFieldIndexToRequest() {
+		// request a piece that I do not have and have not requested from other
+		// neighbors, selection
+		// of piece should happen randomly
+		byte[] bitFieldReq = getBitFieldRequested();
+		byte[] notBytesIndex = new byte[bitFieldMsg.length]; // to store bytes
+																// that I dont
+																// have
+		// determine bits I dont have.
+		for (int i = 0; i < bitFieldReq.length; i++) {
+			notBytesIndex[i] = (byte) ((bitFieldMsg[i] ^ bitFieldReq[i]) & bitFieldMsg[i]);
+		}
+		// select a random index
+		// count the number of 1 bits set
+		int count = 0;
+		for (byte n : notBytesIndex) {
+			while ((int)n != 0) {
+				++count;
+				n &= (n - 1);
+			}
+		}
+		int getRandomIndex1SetIn = 0;
+		int nextInt = ThreadLocalRandom.current().nextInt(0, count + 1);
+		for (int index = 0; index < notBytesIndex.length; index++) {
+			byte n = notBytesIndex[index];
+			//iterate over bits
+			for(int i=0; i<8; i++){
+				if ( (int)(n & (1<<i)) != 0) {
+					  //i-th bit is set
+						nextInt--;
+						if(nextInt == 0){
+							setRequestedIndex((index*8) + i);
+							setBitFieldRequested(index, i); //set the ith bit as 1
+							return (index*8) + i;
+						}
+					}
+			}
+			
+		}
+		// send a random index
+		return -1;
+	}
 }

@@ -121,7 +121,7 @@ public class peerProcess {
 				int randIndex = ThreadLocalRandom.current().nextInt(0, chokeList.size());
 				Peer peer = chokeList.get(randIndex);
 				peer.sendUnChokeMsg();
-				peer.setChocked(false); // so that it can expect request message
+				peer.setChoked(false); // so that it can expect request message
 			}
 			
 		};
@@ -163,14 +163,14 @@ public class peerProcess {
 				for (Peer p : unchockeList) {
 					if (p.isChocked()) {
 						p.sendUnChokeMsg(); // now expect recieve message
-						p.setChocked(false);
+						p.setChoked(false);
 					}
 				}
 
 				for (Peer p : chokeList) {
 					if (!p.isChocked()) {
 						p.sendChokeMsg();
-						p.setChocked(true);
+						p.setChoked(true);
 					}
 				}
 

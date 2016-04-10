@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-
 /**
  * @author Mebin Jacob The threads may come and go but the Peer shall maintain
  *         it's state.
@@ -72,7 +71,7 @@ public class PeerThread extends Thread {
 		// Populate list of peers who are interested in my data..
 		// all real time communication to be handled here for every peer.
 
-		// thread ruuns till not asked to stop
+		// thread runs till not asked to stop
 		try {
 			InputStream inputStream = socket.getInputStream();
 			OutputStream outputStream = socket.getOutputStream();
@@ -82,18 +81,36 @@ public class PeerThread extends Thread {
 				Constants.ActualMessageTypes msgType = MessagesUtil
 						.getMsgType(msgBytesStat);
 				switch (msgType) {
-				case BITFIELD:break;
-				case HAVE:break;
-				case CHOKE:break;
-				case INTERESTED: 
+				case BITFIELD:
+					break;
+				case HAVE:
+					break;
+				case CHOKE:
+					int requestedIndex = p.getRequestedIndex();
+					//remove from requestedIndex
+					Peer.removeSetBitFieldRequested(requestedIndex/8, requestedIndex%8);
+					p.setChoked(true);
+					break;
+				case INTERESTED:
 					Peer.interestedNeighboursinMe.add(p);
 					break;
-				case NOT_INTERESTED: 
-					Peer.notInterestedNeighboursinMe.put(p.getId(),p);
+				case NOT_INTERESTED:
+					Peer.notInterestedNeighboursinMe.put(p.getId(), p);
 					break;
-				case PIECE:break;
-				case REQUEST:break;
-				case UNCHOKE:break;
+				case PIECE:
+					int index = p.getNextBitFieldIndexToRequest();
+					p.sendRequestMsg(index);
+					break;
+				case REQUEST:
+					break;
+				case UNCHOKE:
+					p.setChoked(false);
+					// request a piece that I do not have and have not requested
+					// from other neighbors, selection
+					// of piece should happen randomly
+					int i = p.getNextBitFieldIndexToRequest();
+					p.sendRequestMsg(i);
+					break;
 				}
 			}
 
@@ -102,5 +119,4 @@ public class PeerThread extends Thread {
 			e.printStackTrace();
 		}
 	}
-
 }
