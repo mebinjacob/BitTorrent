@@ -83,7 +83,15 @@ public class PeerThread extends Thread {
 					// should be handled in acceptConnection 
 					break;
 				case HAVE:
-					p.sendInterestedMsg(); // if piece is not with me
+					byte[] readPieceIndexBytes = new byte[4];
+					inputStream.read(readPieceIndexBytes);
+					int pieceIndex =  Util.byteArrayToInt(readPieceIndexBytes);
+					byte[] myBitField = Peer.getMyBitField();
+					byte myByte = myBitField[pieceIndex/8];
+					if((myByte & (1<<pieceIndex<<pieceIndex%8)) != 1){
+						// I don't jhave this piece
+						p.sendInterestedMsg();
+					}
 					break;
 				case CHOKE:
 					int requestedIndex = p.getRequestedIndex();
