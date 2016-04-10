@@ -110,11 +110,11 @@ public class PeerThread extends Thread {
 					p.sendRequestMsg(index);
 					byte[] pieceIndexBytes = new byte[4];
 					inputStream.read(pieceIndexBytes);
-					int pieceIndex = Util.byteArrayToInt(pieceIndexBytes);
+					int pieceI = Util.byteArrayToInt(pieceIndexBytes);
 					//send have message to rest of the peers
 					for (PeerThread peerThread : peerProcess.peersTrees) {
 						if(peerThread.getPeer() != p){
-							peerThread.getPeer().sendHaveMsg(pieceIndex);
+							peerThread.getPeer().sendHaveMsg(pieceI);
 						}
 					}
 					break;
