@@ -2,8 +2,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -15,7 +13,6 @@ public class PeerThread extends Thread {
 	private Socket socket = null;
 	private boolean isClient = false;
 	private boolean stop = false;
-	List<Peer> interestedList = new ArrayList<Peer>();
 	private Peer p = null;
 
 	public Peer getPeer() {
@@ -82,8 +79,11 @@ public class PeerThread extends Thread {
 						.getMsgType(msgBytesStat);
 				switch (msgType) {
 				case BITFIELD:
+					//sent initially
+					// should be handled in acceptConnection 
 					break;
 				case HAVE:
+					p.sendInterestedMsg(); // if piece is not with me
 					break;
 				case CHOKE:
 					int requestedIndex = p.getRequestedIndex();
@@ -100,8 +100,19 @@ public class PeerThread extends Thread {
 				case PIECE:
 					int index = p.getNextBitFieldIndexToRequest();
 					p.sendRequestMsg(index);
+					byte[] pieceIndexBytes = new byte[4];
+					inputStream.read(pieceIndexBytes);
+					int pieceIndex = Util.byteArrayToInt(pieceIndexBytes);
+					//send have message to rest of the peers
+					for (PeerThread peerThread : peerProcess.peersTrees) {
+						if(peerThread.getPeer() != p){
+							peerThread.getPeer().sendHaveMsg(pieceIndex);
+						}
+					}
 					break;
 				case REQUEST:
+					// in request the id will be returned
+					 //send piece msg if in unchoked list
 					break;
 				case UNCHOKE:
 					p.setChoked(false);

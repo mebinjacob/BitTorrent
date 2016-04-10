@@ -300,9 +300,9 @@ public class Peer {
 	}
 
 	// Sends a Message of type Have
-	public void sendHaveMsg() {
+	public void sendHaveMsg(int pieceIndex) {
 		byte[] actualMessage = MessagesUtil
-				.getActualMessage(Constants.ActualMessageTypes.HAVE);
+				.getActualMessage(Util.intToByteArray(pieceIndex), Constants.ActualMessageTypes.HAVE);
 		try {
 			out.write(actualMessage);
 			out.flush();
