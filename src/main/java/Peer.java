@@ -245,6 +245,10 @@ public class Peer {
 		}
 	}
 
+	public void updateBitFieldMsg(int pieceIndex){
+		bitFieldMsg[pieceIndex/8] |= (1<<(pieceIndex%8)); 
+	}
+	
 	public void readBitfieldMsg() {
 		bitFieldMsg = MessagesUtil.readActualMessage(in,
 				Constants.ActualMessageTypes.BITFIELD);

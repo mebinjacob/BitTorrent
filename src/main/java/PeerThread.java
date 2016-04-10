@@ -91,6 +91,7 @@ public class PeerThread extends Thread {
 					if((myByte & (1<<pieceIndex<<pieceIndex%8)) != 1){
 						// I don't jhave this piece
 						p.sendInterestedMsg();
+						p.updateBitFieldMsg(pieceIndex);
 					}
 					break;
 				case CHOKE:
