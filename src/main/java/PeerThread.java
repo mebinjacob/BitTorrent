@@ -120,6 +120,13 @@ public class PeerThread extends Thread {
 					}
 					break;
 				case REQUEST:
+					byte[] ind = new byte[4];
+					inputStream.read(ind);
+					int pIndex = Util.byteArrayToInt(ind);
+					
+					if(Peer.unchockedMap.containsKey(p.getId())){
+						p.sendPieceMsg(pIndex);
+					}
 					// in request the id will be returned
 					 //send piece msg if in unchoked list
 					break;
