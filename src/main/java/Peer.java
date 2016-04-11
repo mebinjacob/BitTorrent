@@ -1,6 +1,8 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
@@ -68,15 +70,15 @@ public class Peer {
 	private int id;
 
 	private int requestedIndex;
-	
-	public void setRequestedIndex(int i){
+
+	public void setRequestedIndex(int i) {
 		requestedIndex = i;
 	}
-	
-	public int getRequestedIndex(){
+
+	public int getRequestedIndex() {
 		return requestedIndex;
 	}
-	
+
 	public void setId(final int id) {
 		this.id = id;
 	}
@@ -103,22 +105,24 @@ public class Peer {
 		return bitFieldRequested;
 	}
 
-	public static void setBitFieldRequested(int index, int i){
+	public static void setBitFieldRequested(int index, int i) {
 		synchronized (bitFieldRequested) {
-			bitFieldRequested[index] |= (1<<i);
+			bitFieldRequested[index] |= (1 << i);
 		}
 	}
-	
-	public static void removeSetBitFieldRequested(int index, int i){
+
+	public static void removeSetBitFieldRequested(int index, int i) {
 		synchronized (bitFieldRequested) {
 			bitFieldRequested[index] ^= 1 << i;
 		}
 	}
-	
+
 	/**
 	 * Peers bit field message.
 	 */
 	private byte[] bitFieldMsg = null;
+
+	public static byte[] dataShared = null;
 	// static block
 	static {
 		String fileName = Configuration.getComProp().get("FileName");
@@ -136,6 +140,7 @@ public class Peer {
 		double bl = Math.ceil(noOfPieces / 8.0f);
 		mybitfield = new byte[(int) bl];
 		bitFieldRequested = new byte[(int) bl];
+		dataShared = new byte[(int) bl];
 		File f = new File(fileName);
 		if (f.exists()) // This peer is the original uploader..
 		{
@@ -146,6 +151,20 @@ public class Peer {
 				System.exit(-1);
 			} else {
 				Arrays.fill(mybitfield, (byte) 1);
+				FileInputStream fileInputStream = null;
+				dataShared = new byte[(int) f.length()];
+				try {
+					fileInputStream = new FileInputStream(f);
+					fileInputStream.read(dataShared);
+					fileInputStream.close();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
 			}
 		}
 
@@ -245,10 +264,10 @@ public class Peer {
 		}
 	}
 
-	public void updateBitFieldMsg(int pieceIndex){
-		bitFieldMsg[pieceIndex/8] |= (1<<(pieceIndex%8)); 
+	public void updateBitFieldMsg(int pieceIndex) {
+		bitFieldMsg[pieceIndex / 8] |= (1 << (pieceIndex % 8));
 	}
-	
+
 	public void readBitfieldMsg() {
 		bitFieldMsg = MessagesUtil.readActualMessage(in,
 				Constants.ActualMessageTypes.BITFIELD);
@@ -305,8 +324,9 @@ public class Peer {
 
 	// Sends a Message of type Have
 	public void sendHaveMsg(int pieceIndex) {
-		byte[] actualMessage = MessagesUtil
-				.getActualMessage(Util.intToByteArray(pieceIndex), Constants.ActualMessageTypes.HAVE);
+		byte[] actualMessage = MessagesUtil.getActualMessage(
+				Util.intToByteArray(pieceIndex),
+				Constants.ActualMessageTypes.HAVE);
 		try {
 			out.write(actualMessage);
 			out.flush();
@@ -372,9 +392,18 @@ public class Peer {
 	}
 
 	// Sends a Message of type Piece
-	public void sendPieceMsg() {
-		byte[] actualMessage = MessagesUtil
-				.getActualMessage(Constants.ActualMessageTypes.PIECE);
+	public void sendPieceMsg(int pieceIndex) {
+		int pI = pieceIndex;
+		int pieceSize = Integer.parseInt(Configuration.getComProp().get("PieceSize"));
+		int startIndex =  pieceSize * pieceIndex;
+		int endIndex = startIndex + pieceSize;
+		byte[] data = new byte[endIndex - startIndex];
+		
+		for(int i = startIndex; i <= endIndex; i++){
+			data[i-startIndex] = dataShared[i]; 
+		}
+		
+		byte[] actualMessage = MessagesUtil.getActualMessage(data, Constants.ActualMessageTypes.PIECE);
 		try {
 			out.write(actualMessage);
 			out.flush();
@@ -401,7 +430,7 @@ public class Peer {
 		// count the number of 1 bits set
 		int count = 0;
 		for (byte n : notBytesIndex) {
-			while ((int)n != 0) {
+			while ((int) n != 0) {
 				++count;
 				n &= (n - 1);
 			}
@@ -410,19 +439,19 @@ public class Peer {
 		int nextInt = ThreadLocalRandom.current().nextInt(0, count + 1);
 		for (int index = 0; index < notBytesIndex.length; index++) {
 			byte n = notBytesIndex[index];
-			//iterate over bits
-			for(int i=0; i<8; i++){
-				if ( (int)(n & (1<<i)) != 0) {
-					  //i-th bit is set
-						nextInt--;
-						if(nextInt == 0){
-							setRequestedIndex((index*8) + i);
-							setBitFieldRequested(index, i); //set the ith bit as 1
-							return (index*8) + i;
-						}
+			// iterate over bits
+			for (int i = 0; i < 8; i++) {
+				if ((int) (n & (1 << i)) != 0) {
+					// i-th bit is set
+					nextInt--;
+					if (nextInt == 0) {
+						setRequestedIndex((index * 8) + i);
+						setBitFieldRequested(index, i); // set the ith bit as 1
+						return (index * 8) + i;
 					}
+				}
 			}
-			
+
 		}
 		// send a random index
 		return -1;
