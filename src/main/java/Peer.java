@@ -286,7 +286,7 @@ public class Peer {
 
 	public boolean isInterested() {
 		// me xor peer
-		// result xor peer
+		// result & ~me
 		// if not 0 then interested
 		int i = 0;
 		byte[] result = new byte[mybitfield.length];
@@ -295,9 +295,9 @@ public class Peer {
 			i++;
 		}
 		i = 0;
-		System.out.println("my bitfield message is " + mybitfield);
-		System.out.println("received bitfield message is " + bitFieldMsg);
+		
 		for (byte b : mybitfield) {
+			
 			result[i] = (byte) (result[i] & ~b);
 			if (result[i] != 0) {
 				return true;

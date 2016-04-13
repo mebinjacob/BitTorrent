@@ -22,8 +22,7 @@ import java.util.logging.Logger;
 // naming convention violated due to project
 // requirement..
 public class peerProcess {
-	private static final Logger LOGGER = Logger
-			.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	private static final Logger LOGGER = MyLogger.getMyLogger();
 	public static PeerComparator<Peer> peerComparator = new PeerComparator<Peer>();
 
 	public static List<PeerThread> peersList = new ArrayList<PeerThread>();
@@ -55,8 +54,8 @@ public class peerProcess {
 		int m = Integer.parseInt(comProp.get("OptimisticUnchokingInterval"));
 		int k = Integer.parseInt(comProp.get("NumberOfPreferredNeighbors"));
 		int p = Integer.parseInt(comProp.get("UnchokingInterval"));
-		peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
 		peerProcessObj.determinePreferredNeighbours(k, p);
+//		peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
 	}
 
 	/**
@@ -65,18 +64,23 @@ public class peerProcess {
 	 * @param portNumber
 	 */
 	public void acceptConnection(int portNumber) {
+		// TODO : Determine to shut down this thread.
 		boolean listening = true;
-
-		try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
-			while (listening) {
-				PeerThread peerThread = new PeerThread(serverSocket.accept(),
-						false, -1);
-				peerThread.start();
-				peersList.add(peerThread);
+		Thread connectionAcceptThread = new Thread() {
+			public void run() {
+				try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
+					while (listening) {
+						PeerThread peerThread = new PeerThread(
+								serverSocket.accept(), false, -1);
+						peerThread.start();
+						peersList.add(peerThread);
+					}
+				} catch (Exception e) {
+					System.out.println(e.getMessage());
+				}
 			}
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
-		}
+		};
+		connectionAcceptThread.start();
 	}
 
 	/**
@@ -124,7 +128,9 @@ public class peerProcess {
 				Peer peer = chokeList.get(randIndex);
 				peer.sendUnChokeMsg();
 				peer.setChoked(false); // so that it can expect request message
-				LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
+				LOGGER.info("Peer " + Peer.myId
+						+ " has the optimistically unchoked neighbor "
+						+ randIndex);
 			}
 
 		};
@@ -139,6 +145,7 @@ public class peerProcess {
 
 		final Runnable kNeighborDeterminer = new Runnable() {
 			public void run() {
+				System.out.println("K preferred neighbours called");
 				// select k preferrred neighbours from neighbours that are
 				// interested in my data.
 				// calculate the downloading rate from each peer. set it
@@ -152,8 +159,7 @@ public class peerProcess {
 				unchockeList = new ArrayList<Peer>();
 				chokeList = new ArrayList<Peer>();
 				int count = k;
-				
-				
+
 				StringBuilder listOfUnchokedNeighbours = new StringBuilder();
 				while (iterator.hasNext()) {
 					Peer next = iterator.next();
@@ -167,8 +173,10 @@ public class peerProcess {
 
 					count--;
 				}
-				LOGGER.info("Peer " + Peer.myId + " has the preferred neighbors " + listOfUnchokedNeighbours);
-				
+				LOGGER.info("Peer " + Peer.myId
+						+ " has the preferred neighbors "
+						+ listOfUnchokedNeighbours);
+
 				for (Peer p : unchockeList) {
 					if (p.isChocked()) {
 						p.sendUnChokeMsg(); // now expect recieve message

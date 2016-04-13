@@ -13,10 +13,10 @@ public class PeerThread extends Thread {
 	private Socket socket = null;
 	private boolean isClient = false;
 	private boolean stop = false;
-	private Peer p = null;
+	private Peer peerConnected = null;
 
 	public Peer getPeer() {
-		return p;
+		return peerConnected;
 	}
 
 	public boolean isStop() {
@@ -30,24 +30,25 @@ public class PeerThread extends Thread {
 	public PeerThread(Socket s, boolean client, int id) {
 		this.socket = s;
 		this.isClient = client;
-		p = new Peer(socket);
+		peerConnected = new Peer(socket);
+		System.out.println(peerConnected.getId());
 		if (isClient) {
-			p.setId(id);
-			p.setClient(true);
-			p.sendHandshakeMsg();
-			p.receiveHandshakeMsg();
+			peerConnected.setId(id);
+			peerConnected.setClient(true);
+			peerConnected.sendHandshakeMsg();
+			peerConnected.receiveHandshakeMsg();
 		} else {
-			int peerId = p.receiveHandshakeMsg();
-			p.setId(peerId);
-			p.sendHandshakeMsg();
+			int peerId = peerConnected.receiveHandshakeMsg();
+			peerConnected.setId(peerId);
+			peerConnected.sendHandshakeMsg();
 
 		}
-		p.sendBitfieldMsg();
-		p.readBitfieldMsg();
-		if (p.isInterested()) {
-			p.sendInterestedMsg();
+		peerConnected.sendBitfieldMsg();
+		peerConnected.readBitfieldMsg();
+		if (peerConnected.isInterested()) {
+			peerConnected.sendInterestedMsg();
 		} else {
-			p.sendNotInterestedMsg();
+			peerConnected.sendNotInterestedMsg();
 		}
 
 		System.out.println("It comes here 3 ");
@@ -56,10 +57,10 @@ public class PeerThread extends Thread {
 
 		if (isClient == true) {
 			LOGGER.info("Peer " + Configuration.getComProp().get("peerId")
-					+ " makes a connection to Peer " + p.getId());
+					+ " makes a connection to Peer " + peerConnected.getId());
 		} else {
 			LOGGER.info(Configuration.getComProp().get("peerId")
-					+ " is connected from " + p.getId());
+					+ " is connected from " + peerConnected.getId());
 		}
 	}
 
@@ -90,32 +91,33 @@ public class PeerThread extends Thread {
 					byte myByte = myBitField[pieceIndex / 8];
 					if ((myByte & (1 << pieceIndex << pieceIndex % 8)) != 1) {
 						// I don't jhave this piece
-						p.sendInterestedMsg();
-						p.updateBitFieldMsg(pieceIndex);
+						peerConnected.sendInterestedMsg();
+						peerConnected.updateBitFieldMsg(pieceIndex);
 					}
 					LOGGER.info("Peer " + Peer.myId
-							+ " received the have message from " + p.getId());
+							+ " received the have message from " + peerConnected.getId());
 					break;
 				case CHOKE:
-					int requestedIndex = p.getRequestedIndex();
+					int requestedIndex = peerConnected.getRequestedIndex();
 					// remove from requestedIndex
 					Peer.removeSetBitFieldRequested(requestedIndex / 8,
 							requestedIndex % 8);
-					Peer.peersChokedMeMap.remove(p.getId());
+					Peer.peersChokedMeMap.remove(peerConnected.getId());
 					LOGGER.info("Peer " + Peer.myId + " is choked by "
-							+ p.getId());
+							+ peerConnected.getId());
 					break;
 				case INTERESTED:
-					Peer.interestedNeighboursinMe.add(p);
+					System.out.println(peerConnected.getId());
+					Peer.interestedNeighboursinMe.add(peerConnected);
 					LOGGER.info("Peer " + Peer.myId
 							+ " received the interested message from "
-							+ p.getId());
+							+ peerConnected.getId());
 					break;
 				case NOT_INTERESTED:
-					Peer.notInterestedNeighboursinMe.put(p.getId(), p);
+					Peer.notInterestedNeighboursinMe.put(peerConnected.getId(), peerConnected);
 					LOGGER.info("Peer " + Peer.myId
 							+ " received the not interested message from "
-							+ p.getId());
+							+ peerConnected.getId());
 					break;
 				case PIECE:
 					byte[] sizeByteArray = new byte[4];
@@ -123,8 +125,8 @@ public class PeerThread extends Thread {
 						sizeByteArray[i] = msgBytesStat[i];
 					}
 					int size = Util.byteArrayToInt(sizeByteArray);
-					int index = p.getNextBitFieldIndexToRequest();
-					p.sendRequestMsg(index);
+					int index = peerConnected.getNextBitFieldIndexToRequest();
+					peerConnected.sendRequestMsg(index);
 					byte[] pieceIndexBytes = new byte[4];
 					int startTime = (int) System.nanoTime();
 					inputStream.read(pieceIndexBytes);
@@ -132,10 +134,10 @@ public class PeerThread extends Thread {
 					byte[] piece = new byte[sizeOfPiece];
 					inputStream.read(piece);
 					Long downTime = System.nanoTime()
-							- Peer.requestTime.get(p.getId());
+							- Peer.requestTime.get(peerConnected.getId());
 
-					Peer.downloadTime.put(p.getId(), downTime);
-					p.setDownloadingRate(downTime);
+					Peer.downloadTime.put(peerConnected.getId(), downTime);
+					peerConnected.setDownloadingRate(downTime);
 					int pieceI = Util.byteArrayToInt(pieceIndexBytes);
 					int stdPieceSize = Integer.parseInt(Configuration
 							.getComProp().get("PieceSize"));
@@ -144,19 +146,19 @@ public class PeerThread extends Thread {
 					}
 					LOGGER.info("Peer " + Peer.myId
 							+ " has downloaded the piece " + pieceI + " from "
-							+ p.getId());
+							+ peerConnected.getId());
 					// TODO:// get the piece and make the file
 
 					// send have message to rest of the peers
 					for (PeerThread peerThread : peerProcess.peersList) {
-						if (peerThread.getPeer() != p) {
+						if (peerThread.getPeer() != peerConnected) {
 							peerThread.getPeer().sendHaveMsg(pieceI);
 						}
 					}
-					int i = p.getNextBitFieldIndexToRequest();
+					int i = peerConnected.getNextBitFieldIndexToRequest();
 					if (i != -1
-							&& !Peer.peersUnchokedMeMap.containsKey(p.getId())) {
-						p.sendRequestMsg(i);
+							&& !Peer.peersUnchokedMeMap.containsKey(peerConnected.getId())) {
+						peerConnected.sendRequestMsg(i);
 					}
 
 					break;
@@ -165,22 +167,22 @@ public class PeerThread extends Thread {
 					inputStream.read(ind);
 					int pIndex = Util.byteArrayToInt(ind);
 
-					if (!p.isChocked()) {
-						p.sendPieceMsg(pIndex);
+					if (!peerConnected.isChocked()) {
+						peerConnected.sendPieceMsg(pIndex);
 					}
 					// in request the id will be returned
 					// send piece msg if in unchoked list
 					break;
 				case UNCHOKE:
-					Peer.peersUnchokedMeMap.put(p.getId(), p);
+					Peer.peersUnchokedMeMap.put(peerConnected.getId(), peerConnected);
 					// request a piece that I do not have and have not requested
 					// from other neighbors, selection
 					// of piece should happen randomly
 					LOGGER.info("Peer " + Peer.myId + " is unchoked by "
-							+ p.getId());
-					int nextIndex = p.getNextBitFieldIndexToRequest();
+							+ peerConnected.getId());
+					int nextIndex = peerConnected.getNextBitFieldIndexToRequest();
 					if (nextIndex != -1) {
-						p.sendRequestMsg(nextIndex);
+						peerConnected.sendRequestMsg(nextIndex);
 					}
 					break;
 				}
