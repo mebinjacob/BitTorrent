@@ -23,10 +23,9 @@ import java.util.concurrent.ThreadLocalRandom;
 // requirement..
 public class peerProcess {
 
-	public static PeerComparator peerComparator = new PeerComparator();
+	public static PeerComparator<Peer> peerComparator = new PeerComparator<Peer>();
 
-	public static TreeSet<PeerThread> peersTrees = new TreeSet<PeerThread>(
-			peerComparator);
+	public static TreeSet<PeerThread> peersTrees = new TreeSet<PeerThread>();
 
 	List<Peer> unchockeList = null; // interested and unchoked peers
 	List<Peer> chokeList = null; // interested and chocked peers

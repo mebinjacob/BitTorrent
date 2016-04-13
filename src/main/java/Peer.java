@@ -44,13 +44,13 @@ public class Peer {
 	/**
 	 * Downloading Rate from this peer. Initially set to 0.
 	 */
-	private int downloadingRate = 0;
+	private long downloadingRate = 0;
 
-	public int getDownloadingRate() {
+	public long getDownloadingRate() {
 		return downloadingRate;
 	}
 
-	public void setDownloadingRate(int d) {
+	public void setDownloadingRate(long d) {
 		downloadingRate = d;
 	}
 

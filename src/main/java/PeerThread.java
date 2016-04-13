@@ -124,7 +124,7 @@ public class PeerThread extends Thread {
 					Long downTime = System.nanoTime() - Peer.requestTime.get(p.getId());
 					
 					Peer.downloadTime.put(p.getId(), downTime);
-					
+					p.setDownloadingRate(downTime);
 					int pieceI = Util.byteArrayToInt(pieceIndexBytes);
 					int stdPieceSize = Integer.parseInt(Configuration
 							.getComProp().get("PieceSize"));
