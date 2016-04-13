@@ -55,7 +55,7 @@ public class PeerThread extends Thread {
 		// logging
 
 		if (isClient == true) {
-			LOGGER.info(Configuration.getComProp().get("peerId")
+			LOGGER.info("Peer " + Configuration.getComProp().get("peerId")
 					+ " makes a connection to Peer " + p.getId());
 		} else {
 			LOGGER.info(Configuration.getComProp().get("peerId")

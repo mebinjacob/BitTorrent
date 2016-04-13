@@ -161,6 +161,7 @@ public class peerProcess {
 						unchockeList.add(next);
 						listOfUnchokedNeighbours.append(next.getId() + ",");
 					} else {
+						next.sendChokeMsg();
 						chokeList.add(next);
 					}
 
