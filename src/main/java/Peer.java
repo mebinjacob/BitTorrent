@@ -30,7 +30,8 @@ public class Peer {
 	public static Map<Integer, Peer> peersChokedMeMap = new HashMap<Integer, Peer>();
 
 	public static Map<Integer, Peer> peersUnchokedMeMap = new HashMap<Integer, Peer>();
-
+	
+	public static int myId = 0;
 	/**
 	 * Map object between peer id and piece requested time.
 	 */

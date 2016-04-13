@@ -14,6 +14,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Logger;
 
 /**
  * @author Mebin Jacob
@@ -22,10 +23,11 @@ import java.util.concurrent.ThreadLocalRandom;
 // naming convention violated due to project
 // requirement..
 public class peerProcess {
-
+	private static final Logger LOGGER = Logger
+			.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	public static PeerComparator<Peer> peerComparator = new PeerComparator<Peer>();
 
-	public static List<PeerThread> peersTrees = new ArrayList<PeerThread>();
+	public static List<PeerThread> peersList = new ArrayList<PeerThread>();
 
 	List<Peer> unchockeList = null; // interested and unchoked peers
 	List<Peer> chokeList = null; // interested and chocked peers
@@ -33,6 +35,7 @@ public class peerProcess {
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
 		int peerId = Integer.valueOf(args[0]);
+		Peer.myId = peerId;
 		Configuration.getComProp().put("peerId", String.valueOf(peerId));
 		scan.close();
 		// create a server socket
@@ -70,7 +73,7 @@ public class peerProcess {
 				PeerThread peerThread = new PeerThread(serverSocket.accept(),
 						false, -1);
 				peerThread.start();
-				peersTrees.add(peerThread);
+				peersList.add(peerThread);
 			}
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
@@ -95,7 +98,7 @@ public class peerProcess {
 					PeerThread peerThread = new PeerThread(socket, true,
 							Integer.parseInt(peerid));
 					peerThread.start();
-					peersTrees.add(peerThread);
+					peersList.add(peerThread);
 				} catch (NumberFormatException | IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -122,6 +125,7 @@ public class peerProcess {
 				Peer peer = chokeList.get(randIndex);
 				peer.sendUnChokeMsg();
 				peer.setChoked(false); // so that it can expect request message
+				LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
 			}
 
 		};
@@ -149,17 +153,22 @@ public class peerProcess {
 				unchockeList = new ArrayList<Peer>();
 				chokeList = new ArrayList<Peer>();
 				int count = k;
+				
+				
+				StringBuilder listOfUnchokedNeighbours = new StringBuilder();
 				while (iterator.hasNext()) {
 					Peer next = iterator.next();
 					if (count > 0) {
 						unchockeList.add(next);
+						listOfUnchokedNeighbours.append(next.getId() + ",");
 					} else {
 						chokeList.add(next);
 					}
 
 					count--;
 				}
-
+				LOGGER.info("Peer " + Peer.myId + " has the preferred neighbors " + listOfUnchokedNeighbours);
+				
 				for (Peer p : unchockeList) {
 					if (p.isChocked()) {
 						p.sendUnChokeMsg(); // now expect recieve message
@@ -198,7 +207,8 @@ public class peerProcess {
 				if (result == true) {
 					kNeighborDeterminerHandle.cancel(true);
 					// stop all threads
-					Iterator<PeerThread> descendingIterator = peersTrees.iterator();
+					Iterator<PeerThread> descendingIterator = peersList
+							.iterator();
 					while (descendingIterator.hasNext()) {
 						PeerThread p = descendingIterator.next();
 						// ask threads to stop gracefully
@@ -209,10 +219,5 @@ public class peerProcess {
 
 			}
 		}, 4 * 60 * 60, SECONDS);
-	}
-
-	@Override
-	public void finalize() {
-
 	}
 }
