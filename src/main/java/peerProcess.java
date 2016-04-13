@@ -25,11 +25,11 @@ public class peerProcess {
 
 	public static PeerComparator<Peer> peerComparator = new PeerComparator<Peer>();
 
-	public static TreeSet<PeerThread> peersTrees = new TreeSet<PeerThread>();
+	public static List<PeerThread> peersTrees = new ArrayList<PeerThread>();
 
 	List<Peer> unchockeList = null; // interested and unchoked peers
 	List<Peer> chokeList = null; // interested and chocked peers
-	
+
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
 		int peerId = Integer.valueOf(args[0]);
@@ -51,7 +51,7 @@ public class peerProcess {
 		peerProcess peerProcessObj = new peerProcess();
 		Map<String, String> comProp = Configuration.getComProp();
 		int m = Integer.parseInt(comProp.get("OptimisticUnchokingInterval"));
-		int k = Integer.parseInt(comProp.get("NumberOfPreferredNeighbors")); 
+		int k = Integer.parseInt(comProp.get("NumberOfPreferredNeighbors"));
 		int p = Integer.parseInt(comProp.get("UnchokingInterval"));
 		peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
 		peerProcessObj.determinePreferredNeighbours(k, p);
@@ -107,26 +107,27 @@ public class peerProcess {
 
 	private final ScheduledExecutorService scheduler = Executors
 			.newScheduledThreadPool(2);
-	
+
 	/**
 	 * Determine optimistically unchocked neighbour every m seconds.
 	 */
-	public void determineOptimisticallyUnchokedNeighbour(final int m){
-		final Runnable optimisticallyUnchockedNeighbourDeterminer = new Runnable(){
+	public void determineOptimisticallyUnchokedNeighbour(final int m) {
+		final Runnable optimisticallyUnchockedNeighbourDeterminer = new Runnable() {
 
 			@Override
 			public void run() {
-				 // select optimistically unchocked neighbour from 
-				int randIndex = ThreadLocalRandom.current().nextInt(0, chokeList.size());
+				// select optimistically unchocked neighbour from
+				int randIndex = ThreadLocalRandom.current().nextInt(0,
+						chokeList.size());
 				Peer peer = chokeList.get(randIndex);
 				peer.sendUnChokeMsg();
 				peer.setChoked(false); // so that it can expect request message
 			}
-			
+
 		};
-		scheduler.scheduleAtFixedRate(optimisticallyUnchockedNeighbourDeterminer, m, m, SECONDS);
+		scheduler.scheduleAtFixedRate(
+				optimisticallyUnchockedNeighbourDeterminer, m, m, SECONDS);
 	}
-	
 
 	/**
 	 * Determines k preferred neighbors every p seconds
@@ -197,8 +198,7 @@ public class peerProcess {
 				if (result == true) {
 					kNeighborDeterminerHandle.cancel(true);
 					// stop all threads
-					Iterator<PeerThread> descendingIterator = peersTrees
-							.descendingIterator();
+					Iterator<PeerThread> descendingIterator = peersTrees.iterator();
 					while (descendingIterator.hasNext()) {
 						PeerThread p = descendingIterator.next();
 						// ask threads to stop gracefully
@@ -206,7 +206,7 @@ public class peerProcess {
 
 					}
 				}
-				
+
 			}
 		}, 4 * 60 * 60, SECONDS);
 	}
