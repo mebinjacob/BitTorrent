@@ -295,9 +295,10 @@ public class Peer {
 			i++;
 		}
 		i = 0;
-		for (byte b : bitFieldMsg) {
-			System.out.print(b + " ");
-			result[i] = (byte) (result[i] ^ b);
+		System.out.println("my bitfield message is " + mybitfield);
+		System.out.println("received bitfield message is " + bitFieldMsg);
+		for (byte b : mybitfield) {
+			result[i] = (byte) (result[i] & b);
 			if (result[i] != 0) {
 				return true;
 			}
