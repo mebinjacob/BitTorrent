@@ -27,10 +27,20 @@ public class Peer {
 
 	public static Map<Integer, Peer> notInterestedNeighboursinMe = new ConcurrentHashMap<Integer, Peer>();
 
-	public static Map<Integer, Peer> chockedMap = new HashMap<Integer, Peer>();
+	public static Map<Integer, Peer> peersChokedMeMap = new HashMap<Integer, Peer>();
 
-	public static Map<Integer, Peer> unchockedMap = new HashMap<Integer, Peer>();
+	public static Map<Integer, Peer> peersUnchokedMeMap = new HashMap<Integer, Peer>();
 
+	/**
+	 * Map object between peer id and piece requested time.
+	 */
+	public static Map<Integer, Long> requestTime = new HashMap<Integer, Long>();
+	
+	/**
+	 * Map object between peer id and download time.
+	 */
+	public static Map<Integer, Long> downloadTime = new HashMap<Integer, Long>();
+	
 	/**
 	 * Downloading Rate from this peer. Initially set to 0.
 	 */
@@ -101,7 +111,7 @@ public class Peer {
 	 */
 	private static byte[] bitFieldRequested = null;
 
-	public static byte[] getBitFieldRequested() {
+	public static synchronized byte[] getBitFieldRequested() {
 		return bitFieldRequested;
 	}
 
@@ -384,7 +394,8 @@ public class Peer {
 		try {
 			out.write(actualMessage);
 			out.flush();
-
+			// Noting the time when the request was made
+			Peer.requestTime.put(id, System.nanoTime());
 		} catch (IOException e) {
 			System.out.println("io exception in reading " + e.getMessage());
 			e.printStackTrace();

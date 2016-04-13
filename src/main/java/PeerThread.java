@@ -79,16 +79,16 @@ public class PeerThread extends Thread {
 						.getMsgType(msgBytesStat);
 				switch (msgType) {
 				case BITFIELD:
-					//sent initially
-					// should be handled in acceptConnection 
+					// sent initially
+					// should be handled in acceptConnection
 					break;
 				case HAVE:
 					byte[] readPieceIndexBytes = new byte[4];
 					inputStream.read(readPieceIndexBytes);
-					int pieceIndex =  Util.byteArrayToInt(readPieceIndexBytes);
+					int pieceIndex = Util.byteArrayToInt(readPieceIndexBytes);
 					byte[] myBitField = Peer.getMyBitField();
-					byte myByte = myBitField[pieceIndex/8];
-					if((myByte & (1<<pieceIndex<<pieceIndex%8)) != 1){
+					byte myByte = myBitField[pieceIndex / 8];
+					if ((myByte & (1 << pieceIndex << pieceIndex % 8)) != 1) {
 						// I don't jhave this piece
 						p.sendInterestedMsg();
 						p.updateBitFieldMsg(pieceIndex);
@@ -96,9 +96,10 @@ public class PeerThread extends Thread {
 					break;
 				case CHOKE:
 					int requestedIndex = p.getRequestedIndex();
-					//remove from requestedIndex
-					Peer.removeSetBitFieldRequested(requestedIndex/8, requestedIndex%8);
-					p.setChoked(true);
+					// remove from requestedIndex
+					Peer.removeSetBitFieldRequested(requestedIndex / 8,
+							requestedIndex % 8);
+					Peer.peersChokedMeMap.remove(p.getId());
 					break;
 				case INTERESTED:
 					Peer.interestedNeighboursinMe.add(p);
@@ -107,36 +108,64 @@ public class PeerThread extends Thread {
 					Peer.notInterestedNeighboursinMe.put(p.getId(), p);
 					break;
 				case PIECE:
+					byte[] sizeByteArray = new byte[4];
+					for (int i = 0; i < 4; i++) {
+						sizeByteArray[i] = msgBytesStat[i];
+					}
+					int size = Util.byteArrayToInt(sizeByteArray);
 					int index = p.getNextBitFieldIndexToRequest();
 					p.sendRequestMsg(index);
 					byte[] pieceIndexBytes = new byte[4];
+					int startTime = (int) System.nanoTime();
 					inputStream.read(pieceIndexBytes);
+					int sizeOfPiece = size - 5;
+					byte[] piece = new byte[sizeOfPiece];
+					inputStream.read(piece);
+					Long downTime = System.nanoTime() - Peer.requestTime.get(p.getId());
+					
+					Peer.downloadTime.put(p.getId(), downTime);
+					
 					int pieceI = Util.byteArrayToInt(pieceIndexBytes);
-					//send have message to rest of the peers
+					int stdPieceSize = Integer.parseInt(Configuration
+							.getComProp().get("PieceSize"));
+					for (int i = 0; i < sizeOfPiece; i++) {
+						Peer.dataShared[pieceI * stdPieceSize + i] = piece[i];
+					}
+
+					// TODO:// get the piece and make the file
+
+					// send have message to rest of the peers
 					for (PeerThread peerThread : peerProcess.peersTrees) {
-						if(peerThread.getPeer() != p){
+						if (peerThread.getPeer() != p) {
 							peerThread.getPeer().sendHaveMsg(pieceI);
 						}
 					}
+					int i = p.getNextBitFieldIndexToRequest();
+					if (i != -1 && !Peer.peersUnchokedMeMap.containsKey(p.getId())){
+						p.sendRequestMsg(i);
+					}
+						
 					break;
 				case REQUEST:
 					byte[] ind = new byte[4];
 					inputStream.read(ind);
 					int pIndex = Util.byteArrayToInt(ind);
 					
-					if(Peer.unchockedMap.containsKey(p.getId())){
+					if (!p.isChocked()) {
 						p.sendPieceMsg(pIndex);
 					}
 					// in request the id will be returned
-					 //send piece msg if in unchoked list
+					// send piece msg if in unchoked list
 					break;
 				case UNCHOKE:
-					p.setChoked(false);
+					Peer.peersUnchokedMeMap.put(p.getId(), p);
 					// request a piece that I do not have and have not requested
 					// from other neighbors, selection
 					// of piece should happen randomly
-					int i = p.getNextBitFieldIndexToRequest();
-					p.sendRequestMsg(i);
+					int nextIndex = p.getNextBitFieldIndexToRequest();
+					if (nextIndex != -1) {
+						p.sendRequestMsg(nextIndex);
+					}
 					break;
 				}
 			}
