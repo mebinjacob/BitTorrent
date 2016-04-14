@@ -27,7 +27,7 @@ public class peerProcess {
 
 	public static List<PeerThread> peersList = new ArrayList<PeerThread>();
 
-	List<Peer> unchockeList = null; // interested and unchoked peers
+	List<Peer> unchokeList = null; // interested and unchoked peers
 	List<Peer> chokeList = null; // interested and chocked peers
 
 	public static void main(String[] args) {
@@ -156,7 +156,7 @@ public class peerProcess {
 				PriorityBlockingQueue<Peer> interestedList = Peer.interestedNeighboursinMe;
 				// select k which has highest download rate
 				Iterator<Peer> iterator = interestedList.iterator();
-				unchockeList = new ArrayList<Peer>();
+				unchokeList = new ArrayList<Peer>();
 				chokeList = new ArrayList<Peer>();
 				int count = k;
 
@@ -164,9 +164,11 @@ public class peerProcess {
 				while (iterator.hasNext()) {
 					Peer next = iterator.next();
 					if (count > 0) {
-						unchockeList.add(next);
+                        System.out.println("peerProcess.run unchoked " + next.getId());
+						unchokeList.add(next);
 						listOfUnchokedNeighbours.append(next.getId() + ",");
 					} else {
+                        System.out.println("peerProcess.run choked " + next.getId());
 						next.sendChokeMsg();
 						chokeList.add(next);
 					}
@@ -178,7 +180,7 @@ public class peerProcess {
 //						+ listOfUnchokedNeighbours.toString());
 
 				System.out.println(listOfUnchokedNeighbours.toString());
-				for (Peer p : unchockeList) {
+				for (Peer p : unchokeList) {
 					if (p.isChocked()) {
 						p.sendUnChokeMsg(); // now expect recieve message
 						p.setChoked(false);
@@ -195,9 +197,8 @@ public class peerProcess {
 			}
 		};
 		final ScheduledFuture<?> kNeighborDeterminerHandle = scheduler
-				.scheduleAtFixedRate(kNeighborDeterminer, p, p, SECONDS);// 2 is
-																			// initial
-																			// delay
+				.scheduleAtFixedRate(kNeighborDeterminer, p, p, SECONDS);
+
 		// need to test
 		scheduler.schedule(new Runnable() {
 			public void run() {
