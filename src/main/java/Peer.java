@@ -30,18 +30,18 @@ public class Peer {
 	public static Map<Integer, Peer> peersChokedMeMap = new HashMap<Integer, Peer>();
 
 	public static Map<Integer, Peer> peersUnchokedMeMap = new HashMap<Integer, Peer>();
-	
+
 	public static int myId = 0;
 	/**
 	 * Map object between peer id and piece requested time.
 	 */
 	public static Map<Integer, Long> requestTime = new HashMap<Integer, Long>();
-	
+
 	/**
 	 * Map object between peer id and download time.
 	 */
 	public static Map<Integer, Long> downloadTime = new HashMap<Integer, Long>();
-	
+
 	/**
 	 * Downloading Rate from this peer. Initially set to 0.
 	 */
@@ -175,7 +175,7 @@ public class Peer {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
+
 			}
 		}
 
@@ -284,20 +284,28 @@ public class Peer {
 				Constants.ActualMessageTypes.BITFIELD);
 	}
 
+	public void print(String s) {
+		System.out.println(s);
+	}
+
+	// TODO: Test this function
+	// logger in thread
 	public boolean isInterested() {
 		// me xor peer
 		// result & ~me
 		// if not 0 then interested
 		int i = 0;
+		print("My bit field is " + Arrays.toString(mybitfield));
+		print("Peers bit field is " + Arrays.toString(bitFieldMsg));
 		byte[] result = new byte[mybitfield.length];
 		for (byte byt : mybitfield) {
 			result[i] = (byte) (byt ^ bitFieldMsg[i]);
 			i++;
 		}
 		i = 0;
-		
+
 		for (byte b : mybitfield) {
-			
+
 			result[i] = (byte) (result[i] & ~b);
 			if (result[i] != 0) {
 				return true;
@@ -377,7 +385,7 @@ public class Peer {
 		}
 	}
 
-	private boolean chocked;
+	private boolean chocked = true;
 
 	public void setChoked(boolean n) {
 		chocked = n;
@@ -407,16 +415,18 @@ public class Peer {
 	// Sends a Message of type Piece
 	public void sendPieceMsg(int pieceIndex) {
 		int pI = pieceIndex;
-		int pieceSize = Integer.parseInt(Configuration.getComProp().get("PieceSize"));
-		int startIndex =  pieceSize * pieceIndex;
+		int pieceSize = Integer.parseInt(Configuration.getComProp().get(
+				"PieceSize"));
+		int startIndex = pieceSize * pieceIndex;
 		int endIndex = startIndex + pieceSize;
-		byte[] data = new byte[endIndex - startIndex];
-		
-		for(int i = startIndex; i <= endIndex; i++){
-			data[i-startIndex] = dataShared[i]; 
+		byte[] data = new byte[endIndex - startIndex + 1];
+
+		for (int i = startIndex; i < endIndex; i++) {
+			data[i - startIndex] = dataShared[i];
 		}
-		
-		byte[] actualMessage = MessagesUtil.getActualMessage(data, Constants.ActualMessageTypes.PIECE);
+
+		byte[] actualMessage = MessagesUtil.getActualMessage(data,
+				Constants.ActualMessageTypes.PIECE);
 		try {
 			out.write(actualMessage);
 			out.flush();
@@ -427,6 +437,7 @@ public class Peer {
 		}
 	}
 
+	// TODO: Test this function
 	public int getNextBitFieldIndexToRequest() {
 		// request a piece that I do not have and have not requested from other
 		// neighbors, selection

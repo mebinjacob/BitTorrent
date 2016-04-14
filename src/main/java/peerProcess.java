@@ -160,7 +160,7 @@ public class peerProcess {
 				chokeList = new ArrayList<Peer>();
 				int count = k;
 
-				StringBuilder listOfUnchokedNeighbours = new StringBuilder();
+				StringBuffer listOfUnchokedNeighbours = new StringBuffer(" ");
 				while (iterator.hasNext()) {
 					Peer next = iterator.next();
 					if (count > 0) {
@@ -173,10 +173,11 @@ public class peerProcess {
 
 					count--;
 				}
-				LOGGER.info("Peer " + Peer.myId
-						+ " has the preferred neighbors "
-						+ listOfUnchokedNeighbours);
+//				LOGGER.info("Peer " + Peer.myId
+//						+ " has the preferred neighbors "
+//						+ listOfUnchokedNeighbours.toString());
 
+				System.out.println(listOfUnchokedNeighbours.toString());
 				for (Peer p : unchockeList) {
 					if (p.isChocked()) {
 						p.sendUnChokeMsg(); // now expect recieve message
