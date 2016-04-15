@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 // requirement..
 public class peerProcess {
 	private static final Logger LOGGER = MyLogger.getMyLogger();
-	public static PeerComparator<Peer> peerComparator = new PeerComparator<Peer>();
 
 	public static List<PeerThread> peersList = new ArrayList<PeerThread>();
 
@@ -84,22 +83,22 @@ public class peerProcess {
 	}
 
 	/**
-	 * Connects to all available clients. PeerId is self peerid as to not to
+	 * Connects to all available clients. PeerId is self myPeerId as to not to
 	 * connect to self or anyone with greater peer id.
 	 */
-	public void clientConnect(int peerId) {
+	public void clientConnect(int myPeerId) {
 		Map<Integer, String> peerProp = Configuration.getPeerProp();
 		for (Integer s : peerProp.keySet()) {
-			if (s < peerId) {
+			if (s < myPeerId) {
 				String line = peerProp.get(s);
 				String[] split = line.split(" ");
 				String host = split[1];
 				String port = split[2];
-				String peerid = split[0];
+				String peerId = split[0];
 				try {
 					Socket socket = new Socket(host, Integer.parseInt(port));
 					PeerThread peerThread = new PeerThread(socket, true,
-							Integer.parseInt(peerid));
+							Integer.parseInt(peerId));
 					peerThread.start();
 					peersList.add(peerThread);
 				} catch (NumberFormatException | IOException e) {
@@ -181,14 +180,14 @@ public class peerProcess {
 
 				System.out.println(listOfUnchokedNeighbours.toString());
 				for (Peer p : unchokeList) {
-					if (p.isChocked()) {
+					if (p.isChoked()) {
 						p.sendUnChokeMsg(); // now expect recieve message
 						p.setChoked(false);
 					}
 				}
 
 				for (Peer p : chokeList) {
-					if (!p.isChocked()) {
+					if (!p.isChoked()) {
 						p.sendChokeMsg();
 						p.setChoked(true);
 					}

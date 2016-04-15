@@ -72,8 +72,8 @@ public class PeerThread extends Thread {
         // thread runs till not asked to stop
         try {
             InputStream inputStream = socket.getInputStream();
-            OutputStream outputStream = socket.getOutputStream();
             while (!isStop()) {
+                System.out.println("Crap!!");
                 byte[] msgBytesStat = new byte[5];
                 inputStream.read(msgBytesStat);
                 Constants.ActualMessageTypes msgType = MessagesUtil
@@ -154,8 +154,10 @@ public class PeerThread extends Thread {
                             }
                         }
                         int i = peerConnected.getNextBitFieldIndexToRequest();
+                        System.out.println("next index requested is " + i);
                         if (i != -1
-                                && !Peer.peersUnchokedMeMap.containsKey(peerConnected.getId())) {
+                                && Peer.peersUnchokedMeMap.containsKey(peerConnected.getId())) {
+                            System.out.println("Yes its being requested" + i);
                             peerConnected.sendRequestMsg(i);
                         }
                         if (i == -1) {
@@ -171,8 +173,8 @@ public class PeerThread extends Thread {
                         byte[] ind = new byte[4];
                         inputStream.read(ind);
                         int pIndex = Util.byteArrayToInt(ind);
-                        System.out.println("screwed life!!!");
-                        if (!peerConnected.isChocked()) {
+                        System.out.println("unscrew it dude!!!");
+                        if (!peerConnected.isChoked()) {
                             System.out.println("sending piece message from request the piece index requested is " + pIndex);
                             peerConnected.sendPieceMsg(pIndex);
                         }
