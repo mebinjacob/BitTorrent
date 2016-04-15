@@ -1,5 +1,7 @@
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 
 
 /**
@@ -31,7 +33,7 @@ public class MessagesUtil {
 		return Util.concatenateByteArrays(Util.concatenateByte(msgL, msgType.value), payload);
 	}
 	
-	public static byte[] readActualMessage(DataInputStream in, Constants.ActualMessageTypes bitfield){
+	public static byte[] readActualMessage(InputStream in, Constants.ActualMessageTypes bitfield){
 		byte[] lengthByte = new byte[4];
 		int read = -1;
 		byte[] data = null;
@@ -61,6 +63,7 @@ public class MessagesUtil {
 	}
 	
 	public static Constants.ActualMessageTypes getMsgType(byte[] msgStat){
+		String s = Arrays.toString(msgStat);
 		for(Constants.ActualMessageTypes  actMsgType : Constants.ActualMessageTypes.values()){
 			if(actMsgType.value == msgStat[4]){
 				return actMsgType;
