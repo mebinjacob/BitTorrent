@@ -1,9 +1,4 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,7 +68,6 @@ public class Peer {
     // shown interest in my
     // data.
 
-    private HashSet<Peer> preferredNeighbors = new HashSet<Peer>();
 
     private int id;
 
@@ -179,8 +173,8 @@ public class Peer {
     }
 
     private Socket socket = null;
-    private DataOutputStream out = null;
-    private DataInputStream in = null;
+    private OutputStream out = null;
+    private InputStream in = null;
 
 	/*
      * BufferedReader buffReader = new BufferedReader(new
@@ -192,8 +186,8 @@ public class Peer {
     public Peer(Socket s) {
         this.socket = s;
         try {
-            out = new DataOutputStream(socket.getOutputStream());
-            in = new DataInputStream(socket.getInputStream());
+            out = socket.getOutputStream();
+            in = socket.getInputStream();
         } catch (IOException e) {
             System.out.println("socket exception!!!");
             e.printStackTrace();
@@ -222,7 +216,6 @@ public class Peer {
                             Constants.ZERO_BITS), Configuration.getComProp()
                     .get("peerId").getBytes());
             try {
-                String s = new String(concatenateByteArrays);
                 out.write(concatenateByteArrays);
                 out.flush();
                 map.put(id, false);
@@ -382,14 +375,14 @@ public class Peer {
         }
     }
 
-    private boolean chocked = true;
+    private boolean choked = true;
 
     public void setChoked(boolean n) {
-        chocked = n;
+        choked = n;
     }
 
-    public boolean isChocked() {
-        return chocked;
+    public boolean isChoked() {
+        return choked;
     }
 
     // Sends a Message of type Request
@@ -418,6 +411,9 @@ public class Peer {
                 "PieceSize"));
         int startIndex = pieceSize * pieceIndex;
         int endIndex = startIndex + pieceSize;
+        if(endIndex >= dataShared.length){
+            endIndex = dataShared.length - 1;
+        }
         //special case
         //if pieceSize is greater than the entire file left
 
@@ -430,7 +426,7 @@ public class Peer {
         }
         //populates the actual data
         int i = startIndex ; // plus 4 again for piece index
-        for (; i < endIndex && i < dataShared.length; i++) {
+        for (; i < endIndex /*&& i < dataShared.length*/; i++) {
             data[i - startIndex + 4] = dataShared[i];
         }
 
@@ -439,7 +435,6 @@ public class Peer {
         try {
             out.write(actualMessage);
             out.flush();
-
         } catch (IOException e) {
             System.out.println("io exception in reading " + e.getMessage());
             e.printStackTrace();
