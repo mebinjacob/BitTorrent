@@ -31,9 +31,8 @@ public class Configuration {
 		return peerProp;
 	}
 	
-	private final String parent = "/home/mebin/Documents/Algorithms/BitTorrent/src/main/java/";
-	private final String peerInfoFileName = parent + "PeerInfo.cfg";
-	private final String commonFileName = parent + "Common.cfg";
+	private final String peerInfoFileName = "PeerInfo.cfg";
+	private final String commonFileName = "Common.cfg";
 	public Configuration() {
 		FileInputStream fis;
 		try {
