@@ -149,7 +149,7 @@ public class Peer {
         double bl = Math.ceil(noOfPieces / 8.0f);
         mybitfield = new byte[(int) bl];
         bitFieldRequested = new byte[(int) bl];
-        dataShared = new byte[(int) bl];
+        dataShared = new byte[Integer.parseInt(Configuration.getComProp().get("FileSize"))];
         File f = new File(fileName);
         if (f.exists()) // This peer is the original uploader..
         {
@@ -161,7 +161,6 @@ public class Peer {
             } else {
                 Arrays.fill(mybitfield, (byte) 1);
                 FileInputStream fileInputStream = null;
-                dataShared = new byte[(int) f.length()];
                 try {
                     fileInputStream = new FileInputStream(f);
                     fileInputStream.read(dataShared);
