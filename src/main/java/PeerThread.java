@@ -71,7 +71,7 @@ public class PeerThread extends Thread {
 
         // thread runs till not asked to stop
         try {
-            InputStream inputStream = new DataInputStream(socket.getInputStream());
+            InputStream inputStream = socket.getInputStream();
             while (!isStop()) {
                 byte[] msgBytesStat = new byte[5];
                 inputStream.read(msgBytesStat);
@@ -101,7 +101,8 @@ public class PeerThread extends Thread {
                         // remove from requestedIndex
                         Peer.removeSetBitFieldRequested(requestedIndex / 8,
                                 requestedIndex % 8);
-                        Peer.peersChokedMeMap.remove(peerConnected.getId());
+                        Peer.peersChokedMeMap.put(peerConnected.getId(), peerConnected);
+                        //Peer.peersChokedMeMap.remove(peerConnected.getId());
                         LOGGER.info("Peer " + Peer.myId + " is choked by "
                                 + peerConnected.getId());
                         break;
