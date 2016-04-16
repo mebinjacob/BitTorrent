@@ -128,8 +128,8 @@ public class PeerThread extends Thread {
                         byte[] pieceIndexBytes = new byte[4];
                         inputStream.read(pieceIndexBytes);
                         int sizeOfPieceMsg = sizeOfMsg - 1;
-                        int sizeOfPiece =  sizeOfPieceMsg - 4;
-                        byte[] piece = new byte[sizeOfPiece];
+                        int sizeOfPiecePayLoad =  sizeOfPieceMsg - 4;
+                        byte[] piece = new byte[sizeOfPiecePayLoad];
                         inputStream.read(piece);
                         Long downTime = System.nanoTime()
                                 - Peer.requestTime.get(peerConnected.getId());
@@ -140,7 +140,7 @@ public class PeerThread extends Thread {
                         System.out.println("The piece index value is " + pieceI);
                         int stdPieceSize = Integer.parseInt(Configuration
                                 .getComProp().get("PieceSize"));
-                        for (int i = 0; i < sizeOfPieceMsg && i < Peer.dataShared.length; i++) {
+                        for (int i = 0; i < sizeOfPiecePayLoad; i++) {
                             Peer.dataShared[pieceI * stdPieceSize + i] = piece[i];
                         }
                         LOGGER.info("Peer " + Peer.myId
