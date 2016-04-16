@@ -34,7 +34,7 @@ public class MessagesUtil {
 		return Util.concatenateByteArrays(Util.concatenateByte(msgL, msgType.value), payload);
 	}
 	
-	public static byte[] readActualMessage(BufferedInputStream in, Constants.ActualMessageTypes bitfield){
+	public static byte[] readActualMessage(InputStream in, Constants.ActualMessageTypes bitfield){
 		byte[] lengthByte = new byte[4];
 		int read = -1;
 		byte[] data = null;
