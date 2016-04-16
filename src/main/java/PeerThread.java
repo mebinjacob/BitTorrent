@@ -71,7 +71,7 @@ public class PeerThread extends Thread {
 
         // thread runs till not asked to stop
         try {
-            InputStream inputStream = socket.getInputStream();
+            InputStream inputStream = new DataInputStream(socket.getInputStream());
             while (!isStop()) {
                 System.out.println("Crap!!");
                 byte[] msgBytesStat = new byte[5];

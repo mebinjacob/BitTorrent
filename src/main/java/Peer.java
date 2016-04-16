@@ -186,8 +186,8 @@ public class Peer {
     public Peer(Socket s) {
         this.socket = s;
         try {
-            out = socket.getOutputStream();
-            in = socket.getInputStream();
+            out = new DataOutputStream(socket.getOutputStream());
+            in = new DataInputStream(socket.getInputStream());
         } catch (IOException e) {
             System.out.println("socket exception!!!");
             e.printStackTrace();
@@ -412,7 +412,7 @@ public class Peer {
         int startIndex = stdPieceSize * pieceIndex;
         int endIndex = startIndex + stdPieceSize;
         if(endIndex >= dataShared.length){
-            endIndex = dataShared.length;
+            endIndex = dataShared.length - 1;
         }
         //special case
         //if pieceSize is greater than the entire file left
