@@ -107,9 +107,15 @@ public class Peer {
         return bitFieldRequested;
     }
 
+    public static void setMyBitFieldRequested(int index, int i) {
+        synchronized (mybitfield) {
+            mybitfield[index] |= (1 << (7-i));
+        }
+    }
+
     public static void setBitFieldRequested(int index, int i) {
         synchronized (bitFieldRequested) {
-            bitFieldRequested[index] |= (1 << i);
+            bitFieldRequested[index] |= (1 << (7-i));
         }
     }
 
