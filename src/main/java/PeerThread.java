@@ -31,7 +31,6 @@ public class PeerThread extends Thread {
         this.socket = s;
         this.isClient = client;
         peerConnected = new Peer(socket);
-        System.out.println(peerConnected.getId());
         if (isClient) {
             peerConnected.setId(id);
             peerConnected.setClient(true);
@@ -71,7 +70,7 @@ public class PeerThread extends Thread {
 
         // thread runs till not asked to stop
         try {
-            InputStream inputStream = socket.getInputStream();
+            InputStream inputStream = new BufferedInputStream(socket.getInputStream());
             while (!isStop()) {
                 byte[] msgBytesStat = new byte[5];
                 inputStream.read(msgBytesStat);
