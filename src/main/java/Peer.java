@@ -407,12 +407,12 @@ public class Peer {
     // Sends a Message of type Piece
     public void sendPieceMsg(int pieceIndex) {
         int pI = pieceIndex;
-        int pieceSize = Integer.parseInt(Configuration.getComProp().get(
+        int stdPieceSize = Integer.parseInt(Configuration.getComProp().get(
                 "PieceSize"));
-        int startIndex = pieceSize * pieceIndex;
-        int endIndex = startIndex + pieceSize;
+        int startIndex = stdPieceSize * pieceIndex;
+        int endIndex = startIndex + stdPieceSize;
         if(endIndex >= dataShared.length){
-            endIndex = dataShared.length - 1;
+            endIndex = dataShared.length;
         }
         //special case
         //if pieceSize is greater than the entire file left
@@ -433,6 +433,7 @@ public class Peer {
         byte[] actualMessage = MessagesUtil.getActualMessage(data,
                 Constants.ActualMessageTypes.PIECE);
         try {
+            System.out.println("The actual message size is " + actualMessage.length);
             out.write(actualMessage);
             out.flush();
         } catch (IOException e) {
