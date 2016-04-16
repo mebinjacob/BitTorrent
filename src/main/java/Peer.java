@@ -1,9 +1,11 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -43,11 +45,11 @@ public class Peer {
         return downloadingRate;
     }
 
-    public void setDownloadingRate(long d) {
+    public void setDownloadingRate(final long d) {
         downloadingRate = d;
     }
 
-    public void setClient(boolean v) {
+    public void setClient(final boolean v) {
         client = v;
     }
 
@@ -73,7 +75,7 @@ public class Peer {
 
     private int requestedIndex;
 
-    public void setRequestedIndex(int i) {
+    public void setRequestedIndex(final int i) {
         requestedIndex = i;
     }
 
@@ -110,28 +112,28 @@ public class Peer {
     public static void setMyBitFieldRequested(int index, int i) {
         synchronized (mybitfield) {
             int in = index;
-            int pos  = i;
-            mybitfield[index] |= (1 << (7-i));
+            int pos = i;
+            mybitfield[index] |= (1 << (7 - i));
         }
     }
 
-    public static void setBitFieldRequested(int index, int i) {
+    public static void setBitFieldRequested(int index, int indexFromRight) {
         synchronized (bitFieldRequested) {
             int in = index;
-            int pos = i;
-            bitFieldRequested[index] |= (1 << i);
+            int pos = indexFromRight;
+            bitFieldRequested[index] |= (1 << indexFromRight);
             Byte b = new Byte(bitFieldRequested[index]);
-            System.out.println("b.intValue() = " + b.intValue());
+//            System.out.println("b.intValue() = " + b.intValue());
         }
     }
 
-    public static void removeSetBitFieldRequested(int index, int i) {
+    public static void removeSetBitFieldRequested(int index, int indexFromLeft) {
         synchronized (bitFieldRequested) {
             int in = index;
-            int pos = i;
-            bitFieldRequested[index] &= ~(1 << (7-i));
+            int pos = indexFromLeft;
+            bitFieldRequested[index] &= ~(1 << (7 - indexFromLeft));
             Byte b = new Byte(bitFieldRequested[index]);
-            System.out.println("b.intValue() = " + b.intValue());
+//            System.out.println("b.intValue() = " + b.intValue());
         }
     }
 
@@ -158,6 +160,17 @@ public class Peer {
         }
         double bl = Math.ceil(noOfPieces / 8.0f);
         mybitfield = new byte[(int) bl];
+        if (bl % 8.0 == 0) {
+            Arrays.fill(mybitfield, (byte) 255);
+        } else {
+            int numOfBitsToBeSetTo1InLastByte = (int)bl%8;
+            Arrays.fill(mybitfield, (byte) 255); // set all to 1
+            mybitfield[mybitfield.length - 1] = 0; // set last byte to 0
+            while(numOfBitsToBeSetTo1InLastByte != 0){
+                mybitfield[mybitfield.length - 1] |= (1<<(8-numOfBitsToBeSetTo1InLastByte));
+                numOfBitsToBeSetTo1InLastByte--;
+            }
+        }
         bitFieldRequested = new byte[(int) bl];
         dataShared = new byte[Integer.parseInt(Configuration.getComProp().get("FileSize"))];
         File f = new File(fileName);
@@ -169,7 +182,6 @@ public class Peer {
                 System.out.println("Actual file size is " + f.length());
                 System.exit(-1);
             } else {
-                Arrays.fill(mybitfield, (byte) 255);
                 FileInputStream fileInputStream = null;
                 try {
                     fileInputStream = new FileInputStream(f);
@@ -427,7 +439,7 @@ public class Peer {
                 "PieceSize"));
         int startIndex = stdPieceSize * pieceIndex;
         int endIndex = startIndex + stdPieceSize - 1;
-        if(endIndex >= dataShared.length){
+        if (endIndex >= dataShared.length) {
             endIndex = dataShared.length - 1;
         }
         //special case
@@ -441,7 +453,7 @@ public class Peer {
             data[i] = pieceIndexByteArray[i];
         }
         //populates the actual data
-        int i = startIndex ; // plus 4 again for piece index
+        int i = startIndex; // plus 4 again for piece index
         for (; i < endIndex /*&& i < dataShared.length*/; i++) {
             data[i - startIndex + 4] = dataShared[i];
         }
@@ -474,62 +486,27 @@ public class Peer {
         for (int i = 0; i < bitFieldReqAndHave.length; i++) {
             notBytesIndex[i] = (byte) ((bitFieldReqAndHave[i] ^ bitFieldMsg[i]) & ~bitFieldReqAndHave[i]);
         }
-        // select a random index
-        // count the number of 1 bits set
         int count = 0;
-//        for (byte n : notBytesIndex) {
-//            byte temp = n;
-//            while (temp != 0) {
-//                ++count;
-//                temp &= (temp - 1);
-//            }
-//
-//        }
         int pos = 0;
-        for(int i= 0; i < notBytesIndex.length; i++){
-            count = 8*i;
+        for (int i = 0; i < notBytesIndex.length; i++) {
+            count = 8 * i;
             byte temp = notBytesIndex[i];
             Byte b = new Byte(temp);
 
             System.out.println("Util.byteArraytoInt = " + b.intValue());
-            pos =0;
+            pos = 0;
             while (temp != 0 && pos < 8) {
-                if((temp & (1<<pos)) != 0)
-                {
+                if ((temp & (1 << pos)) != 0) {
                     setBitFieldRequested(i, pos);
                     pos = 7 - pos;
                     int index = count + pos;
                     setRequestedIndex(index);
-                     // set the ith bit as 1
+                    // set the ith bit as 1
                     return index;
                 }
                 ++pos;
             }
         }
-
-////        Random randomGen = new Random();
-//        if (count != 0) {
-//            int nextInt = ThreadLocalRandom.current().nextInt(0, count);
-////         =
-//            for (int index = 0; index < notBytesIndex.length; index++) {
-//                byte n = notBytesIndex[index];
-//                // iterate over bits
-//                for (int i = 0; i < 8; i++) {
-//                    if ((n & (1 << i)) != 0) {
-//                        // i-th bit is set
-//
-//                        if (nextInt == 0) {
-//                            setRequestedIndex((index * 8) + i);
-//                            setBitFieldRequested(index, i); // set the ith bit as 1
-//                            return (index * 8) + i;
-//                        }
-//                        nextInt--;
-//                    }
-//                }
-//
-//            }
-//            // send a random index
-//        }
 
         return -1;
     }
