@@ -153,7 +153,7 @@ public class Peer {
                 System.out.println("Actual file size is " + f.length());
                 System.exit(-1);
             } else {
-                Arrays.fill(mybitfield, (byte) 1);
+                Arrays.fill(mybitfield, (byte) 255);
                 FileInputStream fileInputStream = null;
                 try {
                     fileInputStream = new FileInputStream(f);
@@ -473,12 +473,18 @@ public class Peer {
         for(int i= 0; i < notBytesIndex.length; i++){
             count = 8*i;
             byte temp = notBytesIndex[i];
+            Byte b = new Byte(temp);
+
+            System.out.println("Util.byteArraytoInt = " + b.intValue());
             pos =0;
             while (temp != 0 && pos < 8) {
                 if((temp & (1<<pos)) != 0)
                 {
-                    pos = 8 - pos;
+                    setBitFieldRequested(i, pos);
+                    pos = 7 - pos;
                     int index = count + pos;
+                    setRequestedIndex(index);
+                     // set the ith bit as 1
                     return index;
                 }
                 ++pos;
