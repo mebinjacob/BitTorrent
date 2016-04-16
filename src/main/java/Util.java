@@ -15,6 +15,13 @@ public class Util {
 		return result;
 	}
 
+	public static byte[] concatenateByteArrays(byte[] a, int aLength, byte[] b, int bLength) {
+		byte[] result = new byte[aLength + bLength];
+		System.arraycopy(a, 0, result, 0, aLength);
+		System.arraycopy(b, 0, result, aLength, bLength);
+		return result;
+	}
+
 	public static byte[] concatenateByteArray(byte b, byte[] a) {
 		byte[] result = new byte[a.length + 1];
 		System.arraycopy(a, 0, result, 0, a.length);
