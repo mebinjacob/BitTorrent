@@ -47,8 +47,21 @@ public class MessagesUtil {
 			byte[] msgType = new byte[1];
 			in.read(msgType);
 			if(msgType[0] == bitfield.value){
-				 data = new byte[dataLength-1];
-				in.read(data);
+                int actualDataLength = dataLength - 1;
+                data = new byte[actualDataLength];
+                while(actualDataLength != 0){
+                    byte[] bufferedData = new byte[actualDataLength];
+                    int dataRead = in.read(bufferedData);
+                    data = Util.concatenateByteArrays(data, data.length - actualDataLength, bufferedData, dataRead);
+                    actualDataLength -= dataRead;
+                }
+                System.out.println("Actual data length " + actualDataLength);
+//				if(dataRead == dataLength -1){
+//					System.out.println("Gool");
+//				}
+//				else{
+//					System.out.println("Screwed!!!");
+//				}
 			}
 			else{
 				System.out.println("Wrong message type sent");
