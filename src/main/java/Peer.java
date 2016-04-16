@@ -186,10 +186,10 @@ public class Peer {
                 }
 
             }
-            if (bl % 8.0 == 0) {
+            if (noOfPieces % 8.0 == 0) {
                 Arrays.fill(mybitfield, (byte) 255);
             } else {
-                int numOfBitsToBeSetTo1InLastByte = (int)bl%8;
+                int numOfBitsToBeSetTo1InLastByte = (int)noOfPieces%8;
                 Arrays.fill(mybitfield, (byte) 255); // set all to 1
                 mybitfield[mybitfield.length - 1] = 0; // set last byte to 0
                 while(numOfBitsToBeSetTo1InLastByte != 0){

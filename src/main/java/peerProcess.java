@@ -53,7 +53,7 @@ public class peerProcess {
 		int m = Integer.parseInt(comProp.get("OptimisticUnchokingInterval"));
 		int k = Integer.parseInt(comProp.get("NumberOfPreferredNeighbors"));
 		int p = Integer.parseInt(comProp.get("UnchokingInterval"));
-//		peerProcessObj.determinePreferredNeighbours(k, p);
+		peerProcessObj.determinePreferredNeighbours(k, p);
 //		peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
 	}
 
