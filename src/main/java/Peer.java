@@ -160,17 +160,7 @@ public class Peer {
         }
         double bl = Math.ceil(noOfPieces / 8.0f);
         mybitfield = new byte[(int) bl];
-        if (bl % 8.0 == 0) {
-            Arrays.fill(mybitfield, (byte) 255);
-        } else {
-            int numOfBitsToBeSetTo1InLastByte = (int)bl%8;
-            Arrays.fill(mybitfield, (byte) 255); // set all to 1
-            mybitfield[mybitfield.length - 1] = 0; // set last byte to 0
-            while(numOfBitsToBeSetTo1InLastByte != 0){
-                mybitfield[mybitfield.length - 1] |= (1<<(8-numOfBitsToBeSetTo1InLastByte));
-                numOfBitsToBeSetTo1InLastByte--;
-            }
-        }
+
         bitFieldRequested = new byte[(int) bl];
         dataShared = new byte[Integer.parseInt(Configuration.getComProp().get("FileSize"))];
         File f = new File(fileName);
@@ -195,6 +185,17 @@ public class Peer {
                     e.printStackTrace();
                 }
 
+            }
+            if (bl % 8.0 == 0) {
+                Arrays.fill(mybitfield, (byte) 255);
+            } else {
+                int numOfBitsToBeSetTo1InLastByte = (int)bl%8;
+                Arrays.fill(mybitfield, (byte) 255); // set all to 1
+                mybitfield[mybitfield.length - 1] = 0; // set last byte to 0
+                while(numOfBitsToBeSetTo1InLastByte != 0){
+                    mybitfield[mybitfield.length - 1] |= (1<<(8-numOfBitsToBeSetTo1InLastByte));
+                    numOfBitsToBeSetTo1InLastByte--;
+                }
             }
         }
 
