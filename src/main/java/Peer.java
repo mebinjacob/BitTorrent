@@ -416,7 +416,7 @@ public class Peer {
         int stdPieceSize = Integer.parseInt(Configuration.getComProp().get(
                 "PieceSize"));
         int startIndex = stdPieceSize * pieceIndex;
-        int endIndex = startIndex + stdPieceSize;
+        int endIndex = startIndex + stdPieceSize - 1;
         if(endIndex >= dataShared.length){
             endIndex = dataShared.length - 1;
         }
