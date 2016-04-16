@@ -215,8 +215,8 @@ public class Peer {
     public Peer(Socket s) {
         this.socket = s;
         try {
-            out = new DataOutputStream(socket.getOutputStream());
-            in = new DataInputStream(socket.getInputStream());
+            out = new BufferedOutputStream(socket.getOutputStream());
+            in = new BufferedInputStream(socket.getInputStream());
         } catch (IOException e) {
             System.out.println("socket exception!!!");
             e.printStackTrace();
@@ -287,6 +287,7 @@ public class Peer {
             byte[] actualMessage = MessagesUtil.getActualMessage(mybitfield,
                     Constants.ActualMessageTypes.BITFIELD);
             out.write(actualMessage);
+            out.flush();
         } catch (IOException e) {
             System.out.println("Bitfield message sending failed!!!");
             // TODO Auto-generated catch block
