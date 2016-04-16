@@ -140,7 +140,7 @@ public class Peer {
     /**
      * Peers bit field message.
      */
-    private byte[] bitFieldMsg = null;
+    private byte[] peerBitFieldMsg = null;
 
     public static byte[] dataShared = null;
 
@@ -296,11 +296,11 @@ public class Peer {
     }
 
     public void updateBitFieldMsg(int pieceIndex) {
-        bitFieldMsg[pieceIndex / 8] |= (1 << (pieceIndex % 8));
+        peerBitFieldMsg[pieceIndex / 8] |= (1 << (pieceIndex % 8));
     }
 
     public void readBitfieldMsg() {
-        bitFieldMsg = MessagesUtil.readActualMessage(in,
+        peerBitFieldMsg = MessagesUtil.readActualMessage(in,
                 Constants.ActualMessageTypes.BITFIELD);
     }
 
@@ -316,10 +316,10 @@ public class Peer {
         // if not 0 then interested
         int i = 0;
         print("My bit field is " + Arrays.toString(mybitfield));
-        print("Peers bit field is " + Arrays.toString(bitFieldMsg));
+        print("Peers bit field is " + Arrays.toString(peerBitFieldMsg));
         byte[] result = new byte[mybitfield.length];
         for (byte byt : mybitfield) {
-            result[i] = (byte) (byt ^ bitFieldMsg[i]);
+            result[i] = (byte) (byt ^ peerBitFieldMsg[i]);
             i++;
         }
         i = 0;
@@ -478,16 +478,24 @@ public class Peer {
         // neighbors, selection
         // of piece should happen randomly
         byte[] bitFieldReq = getBitFieldRequested();
-        byte[] notBytesIndex = new byte[bitFieldMsg.length]; // to store bytes that I don't have
-        byte[] bitFieldReqAndHave = new byte[bitFieldMsg.length];
-
+        byte[] notBytesIndex = new byte[peerBitFieldMsg.length]; // to store bytes that I don't have
+        byte[] bitFieldReqAndHave = new byte[peerBitFieldMsg.length];
+//        System.out.println("peerBitfield length " + peerBitFieldMsg.length);
+//        System.out.println("bitFieldReq[bitFieldReq.length - 1] = " + bitFieldReq[bitFieldReq.length - 1]);
+//        System.out.println("notBytesIndex[notBytesIndex.length - 1] = " + notBytesIndex[notBytesIndex.length - 1]);
+//        System.out.println("bitFieldReqAndHave[bitFieldReqAndHave.length - 1] = " + bitFieldReqAndHave[bitFieldReqAndHave.length - 1]);
         for (int i = 0; i < bitFieldReq.length; i++) {
             bitFieldReqAndHave[i] = (byte) (bitFieldReq[i] | mybitfield[i]);
         }
+//        System.out.println("bitFieldReqAndHave[bitFieldReqAndHave.length - 1] = " + bitFieldReqAndHave[bitFieldReqAndHave.length - 1]);
         // determine bits I dont have.
         for (int i = 0; i < bitFieldReqAndHave.length; i++) {
-            notBytesIndex[i] = (byte) ((bitFieldReqAndHave[i] ^ bitFieldMsg[i]) & ~bitFieldReqAndHave[i]);
+            notBytesIndex[i] = (byte) ((bitFieldReqAndHave[i] ^ peerBitFieldMsg[i]) & ~bitFieldReqAndHave[i]);
         }
+      /*  System.out.println("notBytesIndex[notBytesIndex.length - 1] = " + notBytesIndex[notBytesIndex.length - 1]);
+        System.out.println("mybitfield[mybitfield.length - 1] = " + mybitfield[mybitfield.length - 1]);
+        System.out.println("peerBitFieldMsg[peerBitFieldMsg.length - 1] = " + peerBitFieldMsg[peerBitFieldMsg.length - 1]);*/
+
         int count = 0;
         int pos = 0;
         for (int i = 0; i < notBytesIndex.length; i++) {
@@ -495,7 +503,6 @@ public class Peer {
             byte temp = notBytesIndex[i];
             Byte b = new Byte(temp);
 
-            System.out.println("Util.byteArraytoInt = " + b.intValue());
             pos = 0;
             while (temp != 0 && pos < 8) {
                 if ((temp & (1 << pos)) != 0) {
