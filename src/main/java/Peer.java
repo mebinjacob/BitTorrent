@@ -461,36 +461,53 @@ public class Peer {
         // select a random index
         // count the number of 1 bits set
         int count = 0;
-        for (byte n : notBytesIndex) {
-            byte temp = n;
-            while (temp != 0) {
-                ++count;
-                temp &= (temp - 1);
-            }
-        }
-//        Random randomGen = new Random();
-        if (count != 0) {
-            int nextInt = ThreadLocalRandom.current().nextInt(0, count);
-//         =
-            for (int index = 0; index < notBytesIndex.length; index++) {
-                byte n = notBytesIndex[index];
-                // iterate over bits
-                for (int i = 0; i < 8; i++) {
-                    if ((n & (1 << i)) != 0) {
-                        // i-th bit is set
-
-                        if (nextInt == 0) {
-                            setRequestedIndex((index * 8) + i);
-                            setBitFieldRequested(index, i); // set the ith bit as 1
-                            return (index * 8) + i;
-                        }
-                        nextInt--;
-                    }
+//        for (byte n : notBytesIndex) {
+//            byte temp = n;
+//            while (temp != 0) {
+//                ++count;
+//                temp &= (temp - 1);
+//            }
+//
+//        }
+        int pos = 0;
+        for(int i= 0; i < notBytesIndex.length; i++){
+            count = 8*i;
+            byte temp = notBytesIndex[i];
+            pos =0;
+            while (temp != 0 && pos < 8) {
+                if((temp & (1<<pos)) != 0)
+                {
+                    pos = 8 - pos;
+                    int index = count + pos;
+                    return index;
                 }
-
+                ++pos;
             }
-            // send a random index
         }
+
+////        Random randomGen = new Random();
+//        if (count != 0) {
+//            int nextInt = ThreadLocalRandom.current().nextInt(0, count);
+////         =
+//            for (int index = 0; index < notBytesIndex.length; index++) {
+//                byte n = notBytesIndex[index];
+//                // iterate over bits
+//                for (int i = 0; i < 8; i++) {
+//                    if ((n & (1 << i)) != 0) {
+//                        // i-th bit is set
+//
+//                        if (nextInt == 0) {
+//                            setRequestedIndex((index * 8) + i);
+//                            setBitFieldRequested(index, i); // set the ith bit as 1
+//                            return (index * 8) + i;
+//                        }
+//                        nextInt--;
+//                    }
+//                }
+//
+//            }
+//            // send a random index
+//        }
 
         return -1;
     }
