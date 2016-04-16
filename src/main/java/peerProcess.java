@@ -62,9 +62,9 @@ public class peerProcess {
 	 * 
 	 * @param portNumber
 	 */
-	public void acceptConnection(int portNumber) {
+	public void acceptConnection(final int portNumber) {
 		// TODO : Determine to shut down this thread.
-		boolean listening = true;
+		final boolean listening = true;
 		Thread connectionAcceptThread = new Thread() {
 			public void run() {
 				try (ServerSocket serverSocket = new ServerSocket(portNumber)) {

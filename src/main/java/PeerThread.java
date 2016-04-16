@@ -73,7 +73,6 @@ public class PeerThread extends Thread {
         try {
             InputStream inputStream = new DataInputStream(socket.getInputStream());
             while (!isStop()) {
-                System.out.println("Crap!!");
                 byte[] msgBytesStat = new byte[5];
                 inputStream.read(msgBytesStat);
                 Constants.ActualMessageTypes msgType = MessagesUtil
@@ -90,7 +89,7 @@ public class PeerThread extends Thread {
                         byte[] myBitField = Peer.getMyBitField();
                         byte myByte = myBitField[pieceIndex / 8];
                         if ((myByte & (1 << pieceIndex << pieceIndex % 8)) != 1) {
-                            // I don't jhave this piece
+                            // I don't have this piece
                             peerConnected.sendInterestedMsg();
                             peerConnected.updateBitFieldMsg(pieceIndex);
                         }

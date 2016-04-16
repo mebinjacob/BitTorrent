@@ -455,7 +455,7 @@ public class Peer {
         }
         //populates the actual data
         int i = startIndex; // plus 4 again for piece index
-        for (; i < endIndex /*&& i < dataShared.length*/; i++) {
+        for (; i <= endIndex /*&& i < dataShared.length*/; i++) {
             data[i - startIndex + 4] = dataShared[i];
         }
 
