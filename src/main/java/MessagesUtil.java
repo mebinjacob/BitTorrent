@@ -1,3 +1,4 @@
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +34,7 @@ public class MessagesUtil {
 		return Util.concatenateByteArrays(Util.concatenateByte(msgL, msgType.value), payload);
 	}
 	
-	public static byte[] readActualMessage(InputStream in, Constants.ActualMessageTypes bitfield){
+	public static byte[] readActualMessage(BufferedInputStream in, Constants.ActualMessageTypes bitfield){
 		byte[] lengthByte = new byte[4];
 		int read = -1;
 		byte[] data = null;
@@ -49,11 +50,14 @@ public class MessagesUtil {
 			if(msgType[0] == bitfield.value){
                 int actualDataLength = dataLength - 1;
                 data = new byte[actualDataLength];
-                while(actualDataLength != 0){
+                while(actualDataLength != 0){ // TODO : verify
                     byte[] bufferedData = new byte[actualDataLength];
                     int dataRead = in.read(bufferedData);
-                    data = Util.concatenateByteArrays(data, data.length - actualDataLength, bufferedData, dataRead);
-                    actualDataLength -= dataRead;
+                    if(dataRead != -1){
+                        data = Util.concatenateByteArrays(data, data.length - actualDataLength, bufferedData, dataRead);
+                        actualDataLength -= dataRead;
+                    }
+
                 }
                 System.out.println("Actual data length " + actualDataLength);
 //				if(dataRead == dataLength -1){
