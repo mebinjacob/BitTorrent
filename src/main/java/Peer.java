@@ -109,19 +109,29 @@ public class Peer {
 
     public static void setMyBitFieldRequested(int index, int i) {
         synchronized (mybitfield) {
+            int in = index;
+            int pos  = i;
             mybitfield[index] |= (1 << (7-i));
         }
     }
 
     public static void setBitFieldRequested(int index, int i) {
         synchronized (bitFieldRequested) {
-            bitFieldRequested[index] |= (1 << (7-i));
+            int in = index;
+            int pos = i;
+            bitFieldRequested[index] |= (1 << i);
+            Byte b = new Byte(bitFieldRequested[index]);
+            System.out.println("b.intValue() = " + b.intValue());
         }
     }
 
     public static void removeSetBitFieldRequested(int index, int i) {
         synchronized (bitFieldRequested) {
-            bitFieldRequested[index] ^= 1 << i;
+            int in = index;
+            int pos = i;
+            bitFieldRequested[index] &= ~(1 << (7-i));
+            Byte b = new Byte(bitFieldRequested[index]);
+            System.out.println("b.intValue() = " + b.intValue());
         }
     }
 

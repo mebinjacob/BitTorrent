@@ -149,6 +149,10 @@ public class PeerThread extends Thread {
                         // TODO: get the piece and make the file
 
                         // send have message to rest of the peers
+                        int index = pieceI/8;
+                        int pos = pieceI%8;
+                        Peer.setMyBitFieldRequested(index, pos);
+                        Peer.removeSetBitFieldRequested(index, pos);
                         for (PeerThread peerThread : peerProcess.peersList) {
                             if (peerThread.getPeer() != peerConnected) {
                                 peerThread.getPeer().sendHaveMsg(pieceI);
