@@ -85,9 +85,13 @@ public class PeerThread extends Thread {
                         byte[] readPieceIndexBytes = new byte[4];
                         inputStream.read(readPieceIndexBytes);
                         int pieceIndex = Util.byteArrayToInt(readPieceIndexBytes);
+                        //int byteIndex = pieceIndex / 8;
+                        //int position = pieceIndex % 8;
+                        //position = 7-position;
                         byte[] myBitField = Peer.getMyBitField();
                         byte myByte = myBitField[pieceIndex / 8];
-                        if ((myByte & (1 << pieceIndex << pieceIndex % 8)) != 1) {
+
+                        if ((myByte & (1 << (7-(pieceIndex%8)))) != 1) {
                             // I don't have this piece
                             peerConnected.sendInterestedMsg();
                             peerConnected.updateBitFieldMsg(pieceIndex);

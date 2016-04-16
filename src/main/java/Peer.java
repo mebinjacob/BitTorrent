@@ -296,7 +296,8 @@ public class Peer {
     }
 
     public void updateBitFieldMsg(int pieceIndex) {
-        peerBitFieldMsg[pieceIndex / 8] |= (1 << (pieceIndex % 8));
+        int posi = 7- (pieceIndex % 8);
+        peerBitFieldMsg[pieceIndex / 8] |= (1 << posi);
     }
 
     public void readBitfieldMsg() {
