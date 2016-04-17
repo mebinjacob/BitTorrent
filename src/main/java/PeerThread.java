@@ -42,29 +42,36 @@ public class PeerThread extends Thread {
             peerConnected.sendHandshakeMsg();
 
         }
-        peerConnected.sendBitfieldMsg();
-        peerConnected.readBitfieldMsg();
-        if (peerConnected.isInterested()) {
-            System.out.println("Sending interested msg ");
-            peerConnected.sendInterestedMsg();
-        } else {
-            System.out.println("Sending not interested msg ");
-            peerConnected.sendNotInterestedMsg();
-        }
+        Thread t = new Thread() {
+            public void run() {
+                peerConnected.sendBitfieldMsg();
+                peerConnected.readBitfieldMsg();
+                if (peerConnected.isInterested()) {
+                    System.out.println("Sending interested msg ");
+                    peerConnected.sendInterestedMsg();
+                } else {
+                    System.out.println("Sending not interested msg ");
+                    peerConnected.sendNotInterestedMsg();
+                }
 
-        System.out.println("It comes here 3 ");
-        // should have all peerid's of receiver and sender here, hence do
-        // logging
+                System.out.println("It comes here 3 ");
+                // should have all peerid's of receiver and sender here, hence do
+                // logging
 
-        if (isClient == true) {
-            LOGGER.info("Peer " + Configuration.getComProp().get("peerId")
-                    + " makes a connection to Peer " + peerConnected.getId());
-        } else {
-            LOGGER.info(Configuration.getComProp().get("peerId")
-                    + " is connected from " + peerConnected.getId());
-        }
+                if (isClient == true) {
+                    LOGGER.info("Peer " + Configuration.getComProp().get("peerId")
+                            + " makes a connection to Peer " + peerConnected.getId());
+                } else {
+                    LOGGER.info(Configuration.getComProp().get("peerId")
+                            + " is connected from " + peerConnected.getId());
+                }
+            }
+        };
+        t.start();
+
+
     }
-
+    
     @Override
     public void run() {
         // Populate list of peers who are interested in my data..
