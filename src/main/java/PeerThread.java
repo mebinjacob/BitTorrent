@@ -144,7 +144,7 @@ public class PeerThread extends Thread {
                         int sizeOfPieceMsg = sizeOfMsg - 1;
                         int sizeOfPiecePayLoad = sizeOfPieceMsg - 4;
                         byte[] piece = new byte[sizeOfPiecePayLoad];
-                        Util.readBytes(inputStream, piece, sizeOfPiecePayLoad);
+                        piece = Util.readBytes(inputStream, piece, sizeOfPiecePayLoad);
 //                        inputStream.read(piece);
                         Long downTime = System.nanoTime()
                                 - Peer.requestTime.get(peerConnected.getId());
