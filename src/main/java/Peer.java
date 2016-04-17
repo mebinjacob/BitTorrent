@@ -104,28 +104,28 @@ public class Peer {
     /**
      * Bitfields corresponding to a data file that is being shared.
      */
-    private static byte[] mybitfield = null;
+    private final static byte[] myBitfield;
 
     public static byte[] getMyBitField() {
-        synchronized (mybitfield) {
-            return mybitfield;
+        synchronized (myBitfield) {
+            return myBitfield;
         }
     }
 
     /**
      * Bit field already requested.
      */
-    private static byte[] bitFieldRequested = null;
+    private final static byte[] bitFieldRequested;
 
     public static synchronized byte[] getBitFieldRequested() {
         return bitFieldRequested;
     }
 
     public static void setMyBitFieldRequested(int index, int i) {
-        synchronized (mybitfield) {
+        synchronized (myBitfield) {
             int in = index;
             int pos = i;
-            mybitfield[index] |= (1 << (7 - i));
+            myBitfield[index] |= (1 << (7 - i));
         }
     }
 
@@ -171,7 +171,7 @@ public class Peer {
             noOfPieces = fileSize / pieceSize + 1;
         }
         double bl = Math.ceil(noOfPieces / 8.0f);
-        mybitfield = new byte[(int) bl];
+        myBitfield = new byte[(int) bl];
 
         bitFieldRequested = new byte[(int) bl];
         dataShared = new byte[Integer.parseInt(Configuration.getComProp().get("FileSize"))];
@@ -199,13 +199,13 @@ public class Peer {
 
             }
             if (noOfPieces % 8.0 == 0) {
-                Arrays.fill(mybitfield, (byte) 255);
+                Arrays.fill(myBitfield, (byte) 255);
             } else {
                 int numOfBitsToBeSetTo1InLastByte = (int) noOfPieces % 8;
-                Arrays.fill(mybitfield, (byte) 255); // set all to 1
-                mybitfield[mybitfield.length - 1] = 0; // set last byte to 0
+                Arrays.fill(myBitfield, (byte) 255); // set all to 1
+                myBitfield[myBitfield.length - 1] = 0; // set last byte to 0
                 while (numOfBitsToBeSetTo1InLastByte != 0) {
-                    mybitfield[mybitfield.length - 1] |= (1 << (8 - numOfBitsToBeSetTo1InLastByte));
+                    myBitfield[myBitfield.length - 1] |= (1 << (8 - numOfBitsToBeSetTo1InLastByte));
                     numOfBitsToBeSetTo1InLastByte--;
                 }
             }
@@ -510,7 +510,7 @@ public class Peer {
             notBytesIndex[i] = (byte) ((bitFieldReqAndHave[i] ^ peerBitFieldMsg[i]) & ~bitFieldReqAndHave[i]);
         }
       /*  System.out.println("notBytesIndex[notBytesIndex.length - 1] = " + notBytesIndex[notBytesIndex.length - 1]);
-        System.out.println("mybitfield[mybitfield.length - 1] = " + mybitfield[mybitfield.length - 1]);
+        System.out.println("myBitfield[myBitfield.length - 1] = " + myBitfield[myBitfield.length - 1]);
         System.out.println("peerBitFieldMsg[peerBitFieldMsg.length - 1] = " + peerBitFieldMsg[peerBitFieldMsg.length - 1]);*/
 
         int count = 0;
