@@ -69,13 +69,18 @@ public class peerProcess {
 			public void run() {
 				try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
 					while (listening) {
-						PeerThread peerThread = new PeerThread(
-								serverSocket.accept(), false, -1);
-						peerThread.start();
-						peersList.add(peerThread);
+						Socket acceptedSocket = serverSocket.accept();
+						if(acceptedSocket != null){
+							PeerThread peerThread = new PeerThread(
+									acceptedSocket, false, -1);
+							peerThread.start();
+							peersList.add(peerThread);
+						}
+
 					}
 				} catch (Exception e) {
-					System.out.println(e.getMessage());
+					e.printStackTrace();
+					System.out.println( " culprit " + e.getMessage());
 				}
 			}
 		};
@@ -179,7 +184,9 @@ public class peerProcess {
 
 				System.out.println(listOfUnchokedNeighbours.toString());
 				for (Peer p : unchokeList) {
+					System.out.println("Inside unchoked list");
 					if (p.isChoked()) {
+						System.out.println("inside unchoking");
 						p.sendUnChokeMsg(); // now expect recieve message
 						p.setChoked(false);
 					}
