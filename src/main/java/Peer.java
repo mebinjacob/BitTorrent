@@ -14,6 +14,16 @@ import java.util.logging.Logger;
 public class Peer {
     private static final Logger LOGGER = Logger
             .getLogger(Logger.GLOBAL_LOGGER_NAME);
+    private boolean optimisticallyUnchoked = false;
+
+    public boolean isOptimisticallyUnchoked(){
+        return  optimisticallyUnchoked;
+    }
+
+    public void setOptimisticallyUnchoked(boolean status){
+        optimisticallyUnchoked = status;
+    }
+
     private boolean client = false;
 
     public static PriorityBlockingQueue<Peer> interestedNeighboursinMe = new PriorityBlockingQueue<Peer>(
@@ -97,7 +107,9 @@ public class Peer {
     private static byte[] mybitfield = null;
 
     public static byte[] getMyBitField() {
-        return mybitfield;
+        synchronized (mybitfield) {
+            return mybitfield;
+        }
     }
 
     /**
@@ -284,7 +296,8 @@ public class Peer {
     // Sends a Message of type Bitfiled
     public void sendBitfieldMsg() {
         try {
-            byte[] actualMessage = MessagesUtil.getActualMessage(mybitfield,
+            byte[] myBitField = getMyBitField();
+            byte[] actualMessage = MessagesUtil.getActualMessage(myBitField,
                     Constants.ActualMessageTypes.BITFIELD);
             out.write(actualMessage);
             out.flush();
@@ -316,16 +329,17 @@ public class Peer {
         // result & ~me
         // if not 0 then interested
         int i = 0;
-        print("My bit field is " + Arrays.toString(mybitfield));
+        byte[] myBitField = getMyBitField();
+        print("My bit field is " + Arrays.toString(myBitField));
         print("Peers bit field is " + Arrays.toString(peerBitFieldMsg));
-        byte[] result = new byte[mybitfield.length];
-        for (byte byt : mybitfield) {
+        byte[] result = new byte[myBitField.length];
+        for (byte byt : myBitField) {
             result[i] = (byte) (byt ^ peerBitFieldMsg[i]);
             i++;
         }
         i = 0;
 
-        for (byte b : mybitfield) {
+        for (byte b : myBitField) {
 
             result[i] = (byte) (result[i] & ~b);
             if (result[i] != 0) {
@@ -380,7 +394,7 @@ public class Peer {
     }
 
     // Sends a Message of type Choke
-    public void sendChokeMsg() {
+    public synchronized  void sendChokeMsg() {
         byte[] actualMessage = MessagesUtil
                 .getActualMessage(Constants.ActualMessageTypes.CHOKE);
         try {
@@ -394,7 +408,7 @@ public class Peer {
     }
 
     // Sends a Message of type UnChoke
-    public void sendUnChokeMsg() {
+    public synchronized void sendUnChokeMsg() {
         byte[] actualMessage = MessagesUtil
                 .getActualMessage(Constants.ActualMessageTypes.UNCHOKE);
         try {
@@ -409,11 +423,11 @@ public class Peer {
 
     private boolean choked = true;
 
-    public void setChoked(boolean n) {
+    public synchronized void setChoked(boolean n) {
         choked = n;
     }
 
-    public boolean isChoked() {
+    public synchronized boolean isChoked() {
         return choked;
     }
 
@@ -486,6 +500,7 @@ public class Peer {
 //        System.out.println("bitFieldReq[bitFieldReq.length - 1] = " + bitFieldReq[bitFieldReq.length - 1]);
 //        System.out.println("notBytesIndex[notBytesIndex.length - 1] = " + notBytesIndex[notBytesIndex.length - 1]);
 //        System.out.println("bitFieldReqAndHave[bitFieldReqAndHave.length - 1] = " + bitFieldReqAndHave[bitFieldReqAndHave.length - 1]);
+        byte[] mybitfield = getMyBitField();
         for (int i = 0; i < bitFieldReq.length; i++) {
             bitFieldReqAndHave[i] = (byte) (bitFieldReq[i] | mybitfield[i]);
         }
