@@ -169,9 +169,11 @@ public class PeerThread extends Thread {
                         Peer.setMyBitFieldRequested(index, pos);
                         Peer.removeSetBitFieldRequested(index, pos);
                         for (PeerThread peerThread : peerProcess.peersList) {
-                            if (peerThread.getPeer() != peerConnected) {
+                            System.out.println("Reached Inside Piece Have check ");
+                            //if (peerThread.getPeer() == peerConnected) {
+                                System.out.println("Check Passed Sending Have Message ");
                                 peerThread.getPeer().sendHaveMsg(pieceI);
-                            }
+                            //}
                         }
                         int i = peerConnected.getNextBitFieldIndexToRequest();
                         System.out.println("next index requested is " + i);
