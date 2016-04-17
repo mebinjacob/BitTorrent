@@ -113,7 +113,7 @@ public class Peer {
     }
 
 
-    private static Boolean initialized = false;
+    private Boolean initialized = false;
 
     public boolean isInitialized(){
         return initialized;
