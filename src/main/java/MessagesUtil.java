@@ -50,20 +50,29 @@ public class MessagesUtil {
 			if(msgType[0] == bitfield.value){
                 int actualDataLength = dataLength - 1;
                 data = new byte[actualDataLength];
-                System.out.println("actualDataLength of bitfield = " + actualDataLength);
+                int dataL = actualDataLength;
+		System.out.println("actualDataLength initially = " + actualDataLength);
+                System.out.println("data length initially = " + data.length);
+		System.out.println("actualDataLength of bitfield = " + actualDataLength);
                 while(actualDataLength != 0){ // TODO : verify
                     int availableBytes = in.available();
-                    System.out.println("availableBytes = " + availableBytes);
+                    if(availableBytes > 0) {
+		    System.out.println("availableBytes = " + availableBytes);
                     byte[] bufferedData = new byte[availableBytes];
                     int dataRead = in.read(bufferedData);
-                    actualDataLength -= availableBytes;
                     System.out.println("actualDataLength = " + actualDataLength);
                     if(dataRead != -1){
-                        data = Util.concatenateByteArrays(data, data.length - actualDataLength, bufferedData, dataRead);
+			System.out.println("dataL = " + dataL);
+			System.out.println("dataRead = " + dataRead);
+                            System.out.println("data.length = " + data.length);
+                            System.out.println("actualDataLength = " + actualDataLength);
+                        data = Util.concatenateByteArrays(data, dataL - actualDataLength, bufferedData, dataRead);
+			actualDataLength -= availableBytes;
                     }
                     else{
                         System.out.println("This should not have happened inside MessagesUtil");
                     }
+		 }
 
                 }
                 System.out.println("Actual data length " + actualDataLength);

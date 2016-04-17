@@ -45,8 +45,10 @@ public class PeerThread extends Thread {
         peerConnected.sendBitfieldMsg();
         peerConnected.readBitfieldMsg();
         if (peerConnected.isInterested()) {
-            peerConnected.sendInterestedMsg();
+            System.out.println("Sending interested msg ");
+		peerConnected.sendInterestedMsg();
         } else {
+System.out.println("Sending not interested msg ");
             peerConnected.sendNotInterestedMsg();
         }
 
