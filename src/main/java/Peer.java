@@ -337,6 +337,7 @@ public class Peer {
 
     // Sends a Message of type Interesed
     public void sendInterestedMsg() {
+        System.out.println("Sending interested message ");
         byte[] actualMessage = MessagesUtil
                 .getActualMessage(Constants.ActualMessageTypes.INTERESTED);
         try {
