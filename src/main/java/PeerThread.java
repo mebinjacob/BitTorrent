@@ -1,7 +1,5 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 
 /**
@@ -71,7 +69,7 @@ public class PeerThread extends Thread {
 
 
     }
-    
+
     @Override
     public void run() {
         // Populate list of peers who are interested in my data..
@@ -177,8 +175,8 @@ public class PeerThread extends Thread {
                         for (PeerThread peerThread : peerProcess.peersList) {
                             System.out.println("Reached Inside Piece Have check ");
                             //if (peerThread.getPeer() == peerConnected) {
-                                System.out.println("Check Passed Sending Have Message ");
-                                peerThread.getPeer().sendHaveMsg(pieceI);
+                            System.out.println("Check Passed Sending Have Message ");
+                            peerThread.getPeer().sendHaveMsg(pieceI);
                             //}
                         }
                         int i = peerConnected.getNextBitFieldIndexToRequest();
