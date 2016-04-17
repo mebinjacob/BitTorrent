@@ -127,6 +127,7 @@ public class peerProcess {
 
             @Override
             public void run() {
+                System.out.println("inside optimistically unchoked neighbour!!");
                 // select optimistically unchocked neighbour from
                 int randIndex = ThreadLocalRandom.current().nextInt(0,
                         chokeList.size());
