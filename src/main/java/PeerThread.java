@@ -12,7 +12,6 @@ public class PeerThread extends Thread {
     private boolean isClient = false;
     private boolean stop = false;
     private Peer peerConnected = null;
-    private boolean initialized = false;
 
     public Peer getPeer() {
         return peerConnected;
@@ -45,6 +44,7 @@ public class PeerThread extends Thread {
             public void run() {
                 peerConnected.sendBitfieldMsg();
                 peerConnected.readBitfieldMsg();
+
                 if (peerConnected.isInterested()) {
                     System.out.println("Sending interested msg ");
                     peerConnected.sendInterestedMsg();
@@ -64,7 +64,7 @@ public class PeerThread extends Thread {
                     LOGGER.info(Configuration.getComProp().get("peerId")
                             + " is connected from " + peerConnected.getId());
                 }
-                initialized = true;
+                peerConnected.setSynchronized(true);
             }
 
         };
@@ -79,7 +79,8 @@ public class PeerThread extends Thread {
         // all real time communication to be handled here for every peer.
 
         // thread runs till not asked to stop
-        while (initialized != true) {
+        peerConnected.initialized();
+        System.out.println("Initializaed completed!!");
             try {
                 InputStream inputStream = new BufferedInputStream(socket.getInputStream());
                 while (!isStop()) {
@@ -236,7 +237,6 @@ public class PeerThread extends Thread {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-        }
 
     }
 }

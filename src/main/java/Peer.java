@@ -112,6 +112,28 @@ public class Peer {
         }
     }
 
+
+    private static Boolean initialized = false;
+
+    public boolean isInitialized(){
+        return initialized;
+    }
+    public synchronized void initialized() {
+        while (initialized == false) {
+            try {
+                System.out.println("waiting state ");
+                wait(1000);
+            } catch (Exception e) {
+                System.out.println("exception while waiting " + e.getMessage());
+            }
+        }
+    }
+
+    public synchronized  void setSynchronized(boolean status){
+        initialized = true;
+        notify();
+    }
+
     /**
      * Bit field already requested.
      */

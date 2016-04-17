@@ -54,7 +54,7 @@ public class peerProcess {
         int k = Integer.parseInt(comProp.get("NumberOfPreferredNeighbors"));
         int p = Integer.parseInt(comProp.get("UnchokingInterval"));
         peerProcessObj.determinePreferredNeighbours(k, p);
-        peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
+//        peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
     }
 
     /**
@@ -122,6 +122,7 @@ public class peerProcess {
      * Determine optimistically unchocked neighbour every m seconds.
      */
     Peer previousOptimisticallyUnchokedPeer;
+
     public void determineOptimisticallyUnchokedNeighbour(final int m) {
         final Runnable optimisticallyUnchockedNeighbourDeterminer = new Runnable() {
 
@@ -135,16 +136,15 @@ public class peerProcess {
                 if (peer != null && peer != previousOptimisticallyUnchokedPeer) {
                     peer.setOptimisticallyUnchoked(true);
                     peer.sendUnChokeMsg();
-                    if(previousOptimisticallyUnchokedPeer != null){
+                    if (previousOptimisticallyUnchokedPeer != null) {
                         previousOptimisticallyUnchokedPeer.setOptimisticallyUnchoked(false);
-                        if(previousOptimisticallyUnchokedPeer.isChoked())
-                        {
+                        if (previousOptimisticallyUnchokedPeer.isChoked()) {
                             peer.sendChokeMsg();
                         }
                     }
                     previousOptimisticallyUnchokedPeer = peer;
-                    LOGGER.info("Peer " + Peer.myId  + " has the optimistically unchoked neighbor "  + randIndex);
-                    System.out.println("Peer " + Peer.myId  + " has the optimistically unchoked neighbor "  + randIndex);
+                    LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
+                    System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                 }
             }
 
@@ -178,36 +178,39 @@ public class peerProcess {
                 StringBuffer listOfUnchokedNeighbours = new StringBuffer(" ");
                 while (iterator.hasNext()) {
                     Peer next = iterator.next();
-                    if (count > 0) {
-                        System.out.println("peerProcess.run unchoked " + next.getId());
-                        unchokeList.add(next);
-                        listOfUnchokedNeighbours.append(next.getId() + ",");
-                    } else {
-                        System.out.println("peerProcess.run choked " + next.getId());
-                        chokeList.add(next);
+                    if (next.isInitialized()) {
+                        if (count > 0) {
+                            System.out.println("peerProcess.run unchoked " + next.getId());
+                            unchokeList.add(next);
+                            listOfUnchokedNeighbours.append(next.getId() + ",");
+                        } else {
+                            System.out.println("peerProcess.run choked " + next.getId());
+                            chokeList.add(next);
+                        }
+
                     }
 
                     count--;
                 }
-                LOGGER.info("Peer " + Peer.myId + " has the preferred neighbors " + listOfUnchokedNeighbours.toString());
-
+//                LOGGER.info("Peer " + Peer.myId + " has the preferred neighbors " + listOfUnchokedNeighbours.toString());
                 System.out.println(listOfUnchokedNeighbours.toString());
                 for (Peer p : unchokeList) {
-                    System.out.println("Inside unchoked list");
-                    if (p.isChoked()) {
-                        p.setChoked(false);
-                        if (!p.isOptimisticallyUnchoked()) {
-                            System.out.println("inside unchoking");
-                            p.sendUnChokeMsg(); // now expect recieve message
-                            //p.setChoked(false);
+                        System.out.println("Inside unchoked list");
+                        if (p.isChoked()) {
+                            p.setChoked(false);
+                            if (!p.isOptimisticallyUnchoked()) {
+                                System.out.println("inside unchoking");
+                                p.sendUnChokeMsg(); // now expect recieve message
+                                //p.setChoked(false);
+                            }
                         }
-                    }
+
                 }
 
                 for (Peer p : chokeList) {
-                    if (!p.isChoked()  ) {
+                    if (!p.isChoked()) {
                         p.setChoked(true);
-                        if(!p.isOptimisticallyUnchoked()){
+                        if (!p.isOptimisticallyUnchoked()) {
                             p.sendChokeMsg();
                         }
                     }
