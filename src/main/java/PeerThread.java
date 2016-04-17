@@ -103,7 +103,7 @@ public class PeerThread extends Thread {
                         byte[] myBitField = Peer.getMyBitField();
                         byte myByte = myBitField[pieceIndex / 8];
 
-                        if ((myByte & (1 << (7 - (pieceIndex % 8)))) != 1) {
+                        if ((myByte & (1 << (7 - (pieceIndex % 8)))) == 0) {
                             // I don't have this piece
                             peerConnected.sendInterestedMsg();
                             peerConnected.updateBitFieldMsg(pieceIndex);
@@ -168,7 +168,6 @@ public class PeerThread extends Thread {
                         LOGGER.info("Peer " + Peer.myId
                                 + " has downloaded the piece " + pieceI + " from "
                                 + peerConnected.getId());
-                        // TODO: get the piece and make the file
 
                         // send have message to rest of the peers
                         int index = pieceI / 8;
