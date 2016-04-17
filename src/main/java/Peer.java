@@ -189,11 +189,11 @@ public class Peer {
             if (noOfPieces % 8.0 == 0) {
                 Arrays.fill(mybitfield, (byte) 255);
             } else {
-                int numOfBitsToBeSetTo1InLastByte = (int)noOfPieces%8;
+                int numOfBitsToBeSetTo1InLastByte = (int) noOfPieces % 8;
                 Arrays.fill(mybitfield, (byte) 255); // set all to 1
                 mybitfield[mybitfield.length - 1] = 0; // set last byte to 0
-                while(numOfBitsToBeSetTo1InLastByte != 0){
-                    mybitfield[mybitfield.length - 1] |= (1<<(8-numOfBitsToBeSetTo1InLastByte));
+                while (numOfBitsToBeSetTo1InLastByte != 0) {
+                    mybitfield[mybitfield.length - 1] |= (1 << (8 - numOfBitsToBeSetTo1InLastByte));
                     numOfBitsToBeSetTo1InLastByte--;
                 }
             }
@@ -296,7 +296,7 @@ public class Peer {
     }
 
     public void updateBitFieldMsg(int pieceIndex) {
-        int posi = 7- (pieceIndex % 8);
+        int posi = 7 - (pieceIndex % 8);
         peerBitFieldMsg[pieceIndex / 8] |= (1 << posi);
     }
 
