@@ -50,22 +50,25 @@ public class MessagesUtil {
             if (msgType[0] == bitfield.value) {
                 int actualDataLength = dataLength - 1;
                 data = new byte[actualDataLength];
-                int dataL = actualDataLength;
+                data = Util.readBytes(in, data, actualDataLength);
+               /* int dataL = actualDataLength;
                 System.out.println("actualDataLength initially = " + actualDataLength);
                 System.out.println("data length initially = " + data.length);
                 System.out.println("actualDataLength of bitfield = " + actualDataLength);
-                while (actualDataLength != 0) { // TODO : verify
+                while (actualDataLength > 0) { // TODO : verify
                     int availableBytes = in.available();
+                    System.out.println("availableBytes = " + availableBytes);
                     if (availableBytes > 0) {
-                        System.out.println("availableBytes = " + availableBytes);
+                        availableBytes = Math.min(availableBytes,actualDataLength);
+                        //System.out.println("availableBytes = " + availableBytes);
                         byte[] bufferedData = new byte[availableBytes];
                         int dataRead = in.read(bufferedData);
-                        System.out.println("actualDataLength = " + actualDataLength);
+                        System.out.println("actualDataLength before if  = " + actualDataLength);
                         if (dataRead != -1) {
                             System.out.println("dataL = " + dataL);
                             System.out.println("dataRead = " + dataRead);
                             System.out.println("data.length = " + data.length);
-                            System.out.println("actualDataLength = " + actualDataLength);
+                            System.out.println("actualDataLength inside if  = " + actualDataLength);
                             data = Util.concatenateByteArrays(data, dataL - actualDataLength, bufferedData, dataRead);
                             actualDataLength -= availableBytes;
                         } else {
@@ -74,7 +77,7 @@ public class MessagesUtil {
                     }
 
                 }
-                System.out.println("Actual data length " + actualDataLength);
+                System.out.println("actualDataLength after if  " + actualDataLength);*/
 //				if(dataRead == dataLength -1){
 //					System.out.println("Gool");
 //				}
