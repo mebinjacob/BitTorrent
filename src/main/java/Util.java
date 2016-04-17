@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.io.InputStream;
+
 public class Util {
 	/**
 	 * Utility function to append two byte arrays.
@@ -56,5 +59,22 @@ public class Util {
 		return result;
 	}
 
-	
+	public static byte[] readBytes(InputStream in, byte[] byteArray, int length) throws IOException{
+		int len = length;
+		int idx =0;
+		while(len != 0){
+			int dataAvailableLength = in.available();
+			int read = Math.min(len,dataAvailableLength);
+			byte[] dataRead = new byte[read];
+			if( read != 0) {
+				in.read(dataRead);
+				byteArray = Util.concatenateByteArrays(byteArray, idx, dataRead, read);
+				idx += read;
+				len -= read;
+			}
+		}
+		return byteArray;
+	}
+
+
 }
