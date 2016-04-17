@@ -79,7 +79,7 @@ public class PeerThread extends Thread {
         // all real time communication to be handled here for every peer.
 
         // thread runs till not asked to stop
-        if (initialized == true) {
+        while (initialized != true) {
             try {
                 InputStream inputStream = new BufferedInputStream(socket.getInputStream());
                 while (!isStop()) {
