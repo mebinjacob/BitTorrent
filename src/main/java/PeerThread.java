@@ -42,6 +42,7 @@ public class PeerThread extends Thread {
         }
         Thread t = new Thread() {
             public void run() {
+                System.out.println("Peerconnected is initialized " + peerConnected.isInitialized());
                 peerConnected.sendBitfieldMsg();
                 peerConnected.readBitfieldMsg();
 
@@ -68,6 +69,7 @@ public class PeerThread extends Thread {
             }
 
         };
+        System.out.println("Is initialized before thread start " + peerConnected.isInitialized());
         t.start();
 
 
@@ -79,7 +81,10 @@ public class PeerThread extends Thread {
         // all real time communication to be handled here for every peer.
 
         // thread runs till not asked to stop
+
         peerConnected.initialized();
+        System.out.println("peerConnected.isInitialized() = " + peerConnected.isInitialized());
+        System.out.println("The id for initialization is " + peerConnected.getId());
         System.out.println("Initializaed completed!!");
             try {
                 InputStream inputStream = new BufferedInputStream(socket.getInputStream());
@@ -95,7 +100,7 @@ public class PeerThread extends Thread {
                             // should be handled in acceptConnection
                             break;
                         case HAVE:
-                            System.out.println("Have msg received");
+                            System.out.println("Have msg received from " + peerConnected.getId());
                             byte[] readPieceIndexBytes = new byte[4];
 //                        inputStream.read(readPieceIndexBytes);
                             readPieceIndexBytes = Util.readBytes(inputStream, readPieceIndexBytes, 4);
@@ -115,7 +120,7 @@ public class PeerThread extends Thread {
                                     + " received the have message from " + peerConnected.getId());
                             break;
                         case CHOKE:
-                            System.out.println("choke msg received");
+                            System.out.println("choke msg received from " + peerConnected.getId());
 
                             int requestedIndex = peerConnected.getRequestedIndex();
                             // remove from requestedIndex
@@ -127,22 +132,31 @@ public class PeerThread extends Thread {
                                     + peerConnected.getId());
                             break;
                         case INTERESTED:
-                            System.out.println("interested msg received");
+                            System.out.println("interested msg received " + peerConnected.getId());
                             System.out.println(peerConnected.getId());
-                            Peer.interestedNeighboursinMe.add(peerConnected);
+                            boolean isPresent = false;
+                            for(Peer p : Peer.interestedNeighboursinMe){
+                                if(p.getId() == peerConnected.getId()){
+                                    isPresent = true;
+                                }
+                            }
+                            if(!isPresent){
+                                Peer.interestedNeighboursinMe.add(peerConnected);
+                            }
+                            //Peer.interestedNeighboursinMe.add(peerConnected);
                             LOGGER.info("Peer " + Peer.myId
                                     + " received the interested message from "
                                     + peerConnected.getId());
                             break;
                         case NOT_INTERESTED:
-                            System.out.println("not interested msg received");
+                            System.out.println("not interested msg received "  + peerConnected.getId());
                             Peer.notInterestedNeighboursinMe.put(peerConnected.getId(), peerConnected);
                             LOGGER.info("Peer " + Peer.myId
                                     + " received the not interested message from "
                                     + peerConnected.getId());
                             break;
                         case PIECE:
-                            System.out.println("piece msg received");
+                            System.out.println("piece msg received "  + peerConnected.getId());
                             byte[] sizeByteArray = new byte[4];
                             for (int i = 0; i < 4; i++) {
                                 sizeByteArray[i] = msgBytesStat[i];
@@ -201,7 +215,7 @@ public class PeerThread extends Thread {
                             }
                             break;
                         case REQUEST:
-                            System.out.println("req msg received");
+                            System.out.println("req msg received " +  peerConnected.getId());
                             byte[] ind = new byte[4];
                             inputStream.read(ind);
                             int pIndex = Util.byteArrayToInt(ind);
@@ -214,7 +228,7 @@ public class PeerThread extends Thread {
                             // send piece msg if in unchoked list
                             break;
                         case UNCHOKE:
-                            System.out.println("unchoke msg rec");
+                            System.out.println("unchoke msg rec " +   peerConnected.getId());
                             Peer.peersUnchokedMeMap.put(peerConnected.getId(), peerConnected);
                             // request a piece that I do not have and have not requested
                             // from other neighbors, selection
