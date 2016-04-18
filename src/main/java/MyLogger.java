@@ -4,6 +4,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.io.File;
 
 public class MyLogger {
 	static private FileHandler logTxt;
@@ -24,8 +25,11 @@ public class MyLogger {
 
 		logger.setLevel(Level.INFO);
 
-		logTxt = new FileHandler("log_peer_"
-				+ Configuration.getComProp().get("peerId") + ".log");
+        File directory = new File("peer_" + Configuration.getComProp().get("peerId"));
+        if(!directory.isDirectory())
+            directory.mkdir();
+        logTxt = new FileHandler( directory.getPath() + File.separator + "log_peer_"
+                + Configuration.getComProp().get("peerId") + ".log");
 		formatterText = new LogFormatter();
 		logTxt.setFormatter(formatterText);
 		logger.addHandler(logTxt);

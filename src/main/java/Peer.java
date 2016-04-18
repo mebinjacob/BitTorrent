@@ -56,7 +56,7 @@ public class Peer {
     }
 
     public void setDownloadingRate(final long d) {
-        downloadingRate = d;
+        downloadingRate = -d;
     }
 
     public void setClient(final boolean v) {
