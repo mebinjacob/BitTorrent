@@ -195,7 +195,7 @@ public class peerProcess {
                             }
                         }
                         previousOptimisticallyUnchokedPeer = peer;
-                        LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
+                        log("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                         System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                     }
                 }
@@ -207,73 +207,87 @@ public class peerProcess {
                 optimisticallyUnchockedNeighbourDeterminer, m, m, SECONDS);
     }
 
+    public void log(String msg) {
+        Logger logger = LOGGER;
+        if(logger == null){
+            logger = MyLogger.getMyLogger();
+        }
+        logger.info(msg);
+    }
+
     /**
      * Determines k preferred neighbors every p seconds
      */
     public void determinePreferredNeighbours(final int k, final int p) {
+        try {
+            final Runnable kNeighborDeterminer = new Runnable() {
+                public void run() {
+                    System.out.println("K preferred neighbours called");
+                    // select k preferrred neighbours from neighbours that are
+                    // interested in my data.
+                    // calculate the downloading rate from each peer. set it
+                    // initially to 0.
 
-        final Runnable kNeighborDeterminer = new Runnable() {
-            public void run() {
-                System.out.println("K preferred neighbours called");
-                // select k preferrred neighbours from neighbours that are
-                // interested in my data.
-                // calculate the downloading rate from each peer. set it
-                // initially to 0.
+                    // Select k preferred neighbours, when it has all elements too
+                    // it should be taken care of..
+                    PriorityBlockingQueue<Peer> interestedList = Peer.interestedNeighboursinMe;
+                    // select k which has highest download rate
+                    Iterator<Peer> iterator = interestedList.iterator();
+                    unchokeList = new ArrayList<Peer>();
+                    chokeList = Collections.synchronizedList(new ArrayList<Peer>());
+                    int count = k;
 
-                // Select k preferred neighbours, when it has all elements too
-                // it should be taken care of..
-                PriorityBlockingQueue<Peer> interestedList = Peer.interestedNeighboursinMe;
-                // select k which has highest download rate
-                Iterator<Peer> iterator = interestedList.iterator();
-                unchokeList = new ArrayList<Peer>();
-                chokeList = Collections.synchronizedList(new ArrayList<Peer>());
-                int count = k;
+                    StringBuffer listOfUnchokedNeighbours = new StringBuffer(" ");
+                    while (iterator.hasNext()) {
+                        Peer next = iterator.next();
+                        if (next.isInitialized()) {
+                            if (count > 0) {
+                                System.out.println("peerProcess.run unchoked " + next.getId());
+                                unchokeList.add(next);
+                                listOfUnchokedNeighbours.append(next.getId() + ",");
+                            } else {
+                                System.out.println("peerProcess.run choked " + next.getId());
+                                chokeList.add(next);
+                            }
 
-                StringBuffer listOfUnchokedNeighbours = new StringBuffer(" ");
-                while (iterator.hasNext()) {
-                    Peer next = iterator.next();
-                    if (next.isInitialized()) {
-                        if (count > 0) {
-                            System.out.println("peerProcess.run unchoked " + next.getId());
-                            unchokeList.add(next);
-                            listOfUnchokedNeighbours.append(next.getId() + ",");
-                        } else {
-                            System.out.println("peerProcess.run choked " + next.getId());
-                            chokeList.add(next);
+                        }
+
+                        count--;
+                    }
+                    String neigh = listOfUnchokedNeighbours.toString();
+                    log("Peer " + Peer.myId + " has the preferred neighbors " + neigh);
+                    System.out.println(listOfUnchokedNeighbours.toString());
+                    for (Peer p : unchokeList) {
+                        System.out.println("Inside unchoked list");
+                        if (p.isChoked()) {
+                            p.setChoked(false);
+                            if (!p.isOptimisticallyUnchoked()) {
+                                System.out.println("inside unchoking");
+                                p.sendUnChokeMsg(); // now expect recieve message
+                                //p.setChoked(false);
+                            }
                         }
 
                     }
 
-                    count--;
-                }
-//                LOGGER.info("Peer " + Peer.myId + " has the preferred neighbors " + listOfUnchokedNeighbours.toString());
-                System.out.println(listOfUnchokedNeighbours.toString());
-                for (Peer p : unchokeList) {
-                    System.out.println("Inside unchoked list");
-                    if (p.isChoked()) {
-                        p.setChoked(false);
-                        if (!p.isOptimisticallyUnchoked()) {
-                            System.out.println("inside unchoking");
-                            p.sendUnChokeMsg(); // now expect recieve message
-                            //p.setChoked(false);
+                    for (Peer p : chokeList) {
+                        if (!p.isChoked()) {
+                            p.setChoked(true);
+                            if (!p.isOptimisticallyUnchoked()) {
+                                p.sendChokeMsg();
+                            }
                         }
                     }
 
                 }
+            };
+            final ScheduledFuture<?> kNeighborDeterminerHandle = scheduler
+                    .scheduleAtFixedRate(kNeighborDeterminer, p, p, SECONDS);
+        } catch (Exception e) {
+            System.out.println("LOL ho gaya");
+            System.out.println(e.getMessage());
+        }
 
-                for (Peer p : chokeList) {
-                    if (!p.isChoked()) {
-                        p.setChoked(true);
-                        if (!p.isOptimisticallyUnchoked()) {
-                            p.sendChokeMsg();
-                        }
-                    }
-                }
-
-            }
-        };
-        final ScheduledFuture<?> kNeighborDeterminerHandle = scheduler
-                .scheduleAtFixedRate(kNeighborDeterminer, p, p, SECONDS);
 
     }
 }

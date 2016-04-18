@@ -31,7 +31,7 @@ public class MyLogger {
 		logger.addHandler(logTxt);
 	}
 
-	public static synchronized Logger getMyLogger() {
+	public static Logger getMyLogger() {
 		return logger;
 	}
 }
