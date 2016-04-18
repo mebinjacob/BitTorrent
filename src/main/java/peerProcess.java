@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 public class peerProcess {
     private static final Logger LOGGER = MyLogger.getMyLogger();
 
-    public static List<PeerThread> peersList = new ArrayList<PeerThread>();
+    public static List<PeerThread> peersList = Collections.synchronizedList(new ArrayList<PeerThread>());
 
     List<Peer> unchokeList = null; // interested and unchoked peers
     List<Peer> chokeList = null; // interested and chocked peers
@@ -51,6 +51,7 @@ public class peerProcess {
         int p = Integer.parseInt(comProp.get("UnchokingInterval"));
         peerProcessObj.determinePreferredNeighbours(k, p);
         peerProcessObj.determineOptimisticallyUnchokedNeighbour(m);
+        peerProcessObj.determineShutdownScheduler();
     }
 
     /**
@@ -58,9 +59,10 @@ public class peerProcess {
      *
      * @param portNumber
      */
+    boolean listening = true;
     public void acceptConnection(final int portNumber) {
         // TODO : Determine to shut down this thread.
-        final boolean listening = true;
+
         Thread connectionAcceptThread = new Thread() {
             public void run() {
                 try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
@@ -112,7 +114,42 @@ public class peerProcess {
     }
 
     private final ScheduledExecutorService scheduler = Executors
-            .newScheduledThreadPool(2);
+            .newScheduledThreadPool(3);
+
+    /**
+     * Determine when to shutdown...
+     */
+    public void determineShutdownScheduler() {
+        final Runnable shutDownDeterminer = new Runnable() {
+            @Override
+            public void run() {
+                byte[] myBitField = Peer.getMyBitField();
+                if (peersList.size() > 0) {
+                    boolean shutDown = true;
+                    for (PeerThread p : peersList) {
+                        byte[] pBitFieldMsg = p.getPeer().getPeerBitFieldMsg();
+                        if (Arrays.equals(pBitFieldMsg, myBitField) == false) {
+                            // do not shutdown
+                            shutDown = false;
+                            break;
+                        }
+                    }
+                    if (shutDown) {
+                        for (PeerThread p : peersList) {
+                            p.setStop(true);
+                            p.interrupt();
+                            listening = false; // to stop listening for socket connection
+                        }
+                        scheduler.shutdown();
+                    }
+                }
+
+            }
+        };
+        scheduler.scheduleAtFixedRate(shutDownDeterminer, 3, 3, SECONDS);
+
+    }
+
 
     /**
      * Determine optimistically unchocked neighbour every m seconds.
@@ -143,7 +180,7 @@ public class peerProcess {
                             }
                         }
                         previousOptimisticallyUnchokedPeer = peer;
-                        LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
+//                        LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                         System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                     }
                 }
@@ -241,8 +278,7 @@ public class peerProcess {
                 if (result == true) {
                     kNeighborDeterminerHandle.cancel(true);
                     // stop all threads
-                    Iterator<PeerThread> descendingIterator = peersList
-                            .iterator();
+                    Iterator<PeerThread> descendingIterator = peersList.iterator();
                     while (descendingIterator.hasNext()) {
                         PeerThread p = descendingIterator.next();
                         // ask threads to stop gracefully

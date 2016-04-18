@@ -12,7 +12,7 @@ public class PeerThread extends Thread {
     private boolean isClient = false;
     private boolean stop = false;
     private Peer peerConnected = null;
-
+    private  Thread initializeThread = null;
     public Peer getPeer() {
         return peerConnected;
     }
@@ -23,6 +23,17 @@ public class PeerThread extends Thread {
 
     public void setStop(boolean v) {
         stop = v;
+        if(v == true){
+            try {
+                if(!socket.isClosed())
+                {
+                    socket.close();
+                }
+            } catch (IOException e) {
+                System.out.println("Cannot close socket for peer " + peerConnected.getId());
+                e.printStackTrace();
+            }
+        }
     }
 
     public PeerThread(Socket s, boolean client, int id) {
@@ -40,7 +51,7 @@ public class PeerThread extends Thread {
             peerConnected.sendHandshakeMsg();
 
         }
-        Thread t = new Thread() {
+        initializeThread = new Thread() {
             public void run() {
                 System.out.println("Peerconnected is initialized " + peerConnected.isInitialized());
                 peerConnected.sendBitfieldMsg();
@@ -65,12 +76,12 @@ public class PeerThread extends Thread {
                     LOGGER.info(Configuration.getComProp().get("peerId")
                             + " is connected from " + peerConnected.getId());
                 }
-                peerConnected.setSynchronized(true);
+                peerConnected.setInitialized(true);
             }
 
         };
         System.out.println("Is initialized before thread start " + peerConnected.isInitialized());
-        t.start();
+        initializeThread.start();
 
 
     }
@@ -114,8 +125,8 @@ public class PeerThread extends Thread {
                             if ((myByte & (1 << (7 - (pieceIndex % 8)))) == 0) {
                                 // I don't have this piece
                                 peerConnected.sendInterestedMsg();
-                                peerConnected.updateBitFieldMsg(pieceIndex);
                             }
+                            peerConnected.updateBitFieldMsg(pieceIndex);
                             LOGGER.info("Peer " + Peer.myId
                                     + " received the have message from " + peerConnected.getId());
                             break;
@@ -248,8 +259,12 @@ public class PeerThread extends Thread {
                 }
 
             } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                if(!isStop()) {
+                    e.printStackTrace();
+                }
+            }finally {
+                System.out.println("Exiting!! " + peerConnected.getId());
+                initializeThread.interrupt();
             }
 
     }

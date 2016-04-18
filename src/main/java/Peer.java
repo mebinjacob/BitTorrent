@@ -129,7 +129,7 @@ public class Peer {
         }
     }
 
-    public synchronized  void setSynchronized(boolean status){
+    public synchronized  void setInitialized(boolean status){
         initialized = true;
         notify();
     }
@@ -176,6 +176,9 @@ public class Peer {
      */
     private byte[] peerBitFieldMsg = null;
 
+    public synchronized byte[]  getPeerBitFieldMsg(){
+        return peerBitFieldMsg;
+    }
     public static byte[] dataShared = null;
 
     // static block
@@ -330,12 +333,12 @@ public class Peer {
         }
     }
 
-    public void updateBitFieldMsg(int pieceIndex) {
+    public synchronized  void updateBitFieldMsg(int pieceIndex) {
         int posi = 7 - (pieceIndex % 8);
         peerBitFieldMsg[pieceIndex / 8] |= (1 << posi);
     }
 
-    public void readBitfieldMsg() {
+    public synchronized void readBitfieldMsg() {
         peerBitFieldMsg = MessagesUtil.readActualMessage(in,
                 Constants.ActualMessageTypes.BITFIELD);
     }
