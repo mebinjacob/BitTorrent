@@ -195,7 +195,7 @@ public class peerProcess {
                             }
                         }
                         previousOptimisticallyUnchokedPeer = peer;
-//                        LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
+                        LOGGER.info("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                         System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
                     }
                 }
