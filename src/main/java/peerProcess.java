@@ -255,7 +255,9 @@ public class peerProcess {
                         count--;
                     }
                     String neigh = listOfUnchokedNeighbours.toString();
-                    log("Peer " + Peer.myId + " has the preferred neighbors " + neigh);
+                    if(!neigh.trim().isEmpty()){
+                        log("Peer " + Peer.myId + " has the preferred neighbors " + neigh);
+                    }
                     System.out.println(listOfUnchokedNeighbours.toString());
                     for (Peer p : unchokeList) {
                         System.out.println("Inside unchoked list");
