@@ -51,6 +51,9 @@ public class PeerThread extends Thread {
             peerConnected.sendHandshakeMsg();
 
         }
+        //giving a name to the thread
+        this.setName("Peer : " + id);
+
         initializeThread = new Thread() {
             public void run() {
                 System.out.println("Peerconnected is initialized " + peerConnected.isInitialized());

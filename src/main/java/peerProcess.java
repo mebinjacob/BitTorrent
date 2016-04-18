@@ -43,7 +43,7 @@ public class peerProcess {
         String portNo = string.split(" ")[2];
         peerProcess peer = new peerProcess();
         peer.clientConnect(peerId);
-        peer.acceptConnection(Integer.valueOf(portNo));
+        peer.acceptConnection(peerId, Integer.valueOf(portNo));
         peerProcess peerProcessObj = new peerProcess();
         Map<String, String> comProp = Configuration.getComProp();
         int m = Integer.parseInt(comProp.get("OptimisticUnchokingInterval"));
@@ -59,22 +59,28 @@ public class peerProcess {
      *
      * @param portNumber
      */
-    boolean listening = true;
-    public void acceptConnection(final int portNumber) {
+    int greaterPeerCount = 0;
+
+    public void acceptConnection(int myPeerId, final int portNumber) {
         // TODO : Determine to shut down this thread.
 
+        Map<Integer, String> peerProp = Configuration.getPeerProp();
+        for (Integer s : peerProp.keySet()) {
+            if (s > myPeerId) {
+                greaterPeerCount++;
+            }
+        }
         Thread connectionAcceptThread = new Thread() {
             public void run() {
                 try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
-                    while (listening) {
+                    while (greaterPeerCount > 0) {
                         Socket acceptedSocket = serverSocket.accept();
                         if (acceptedSocket != null) {
-                            PeerThread peerThread = new PeerThread(
-                                    acceptedSocket, false, -1);
+                            PeerThread peerThread = new PeerThread(acceptedSocket, false, -1);
                             peerThread.start();
                             peersList.add(peerThread);
+                            greaterPeerCount--;
                         }
-
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -82,6 +88,7 @@ public class peerProcess {
                 }
             }
         };
+        connectionAcceptThread.setName("Connection Accepting Thread ");
         connectionAcceptThread.start();
     }
 
@@ -138,9 +145,17 @@ public class peerProcess {
                         for (PeerThread p : peersList) {
                             p.setStop(true);
                             p.interrupt();
-                            listening = false; // to stop listening for socket connection
+//                            listening = false; // to stop listening for socket connection
                         }
                         scheduler.shutdown();
+                        if (!scheduler.isShutdown()) {
+                            System.out.println("Shutdown nahi hua");
+                        }
+                        try {
+                            scheduler.awaitTermination(5, SECONDS);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
@@ -260,34 +275,5 @@ public class peerProcess {
         final ScheduledFuture<?> kNeighborDeterminerHandle = scheduler
                 .scheduleAtFixedRate(kNeighborDeterminer, p, p, SECONDS);
 
-        // need to test
-        scheduler.schedule(new Runnable() {
-            public void run() {
-                // check if file has downloaded
-                byte[] myBitField = Peer.getMyBitField();
-                boolean result = false;
-                Integer one = new Integer(1);
-
-                for (byte b : myBitField) {
-                    if ((b & one.byteValue()) != 1) {
-                        result = false;
-                        break;
-                    }
-                    result = true;
-                }
-                if (result == true) {
-                    kNeighborDeterminerHandle.cancel(true);
-                    // stop all threads
-                    Iterator<PeerThread> descendingIterator = peersList.iterator();
-                    while (descendingIterator.hasNext()) {
-                        PeerThread p = descendingIterator.next();
-                        // ask threads to stop gracefully
-                        p.setStop(true);
-
-                    }
-                }
-
-            }
-        }, 4 * 60 * 60, SECONDS);
     }
 }
