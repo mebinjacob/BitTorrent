@@ -53,7 +53,7 @@ public class PeerThread extends Thread {
 
         }
         //giving a name to the thread
-        this.setName("Peer : " + id);
+        this.setName("Peer : " + peerConnected.getId());
 
         initializeThread = new Thread() {
             public void run() {
