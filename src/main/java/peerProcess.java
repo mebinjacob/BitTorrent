@@ -131,7 +131,7 @@ public class peerProcess {
             public void run() {
                 byte[] myBitField = Peer.getMyBitField();
                 System.out.println("Arrays.toString(myBitField) = " + Arrays.toString(myBitField));
-                if (peersList.size() > 0) {
+                if (peersList.size() == Configuration.getPeerProp().size()) {
                     boolean shutDown = true;
                     for (PeerThread p : peersList) {
                         byte[] pBitFieldMsg = p.getPeer().getPeerBitFieldMsg();
@@ -150,7 +150,7 @@ public class peerProcess {
 
                         //lets write it to a file
 
-
+                        System.out.println("Scheduler shutdown called !!");
                         scheduler.shutdown();
                         if (!scheduler.isShutdown()) {
                             System.out.println("Shutdown nahi hua");
