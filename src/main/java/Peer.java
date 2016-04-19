@@ -1,11 +1,7 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.logging.Logger;
 
 /**
@@ -26,36 +22,36 @@ public class Peer {
 
     private boolean client = false;
 
-    public static PriorityBlockingQueue<Peer> interestedNeighboursinMe = new PriorityBlockingQueue<Peer>(
-            10, new PeerComparator<Peer>());
+    public static List<Peer> interestedNeighboursinMe = Collections.synchronizedList(new ArrayList<Peer>());//new PriorityBlockingQueue<Peer>(
+//            10, );
 
-    public static Map<Integer, Peer> notInterestedNeighboursinMe = new ConcurrentHashMap<Integer, Peer>();
+    public static Map<Integer, Peer> notInterestedNeighboursinMe = Collections.synchronizedMap(new HashMap<Integer, Peer>());
 
-    public static Map<Integer, Peer> peersChokedMeMap = new HashMap<Integer, Peer>();
+    public static Map<Integer, Peer> peersChokedMeMap = Collections.synchronizedMap(new HashMap<Integer, Peer>());
 
-    public static Map<Integer, Peer> peersUnchokedMeMap = new HashMap<Integer, Peer>();
+    public static Map<Integer, Peer> peersUnchokedMeMap = Collections.synchronizedMap(new HashMap<Integer, Peer>());
 
     public static int myId = 0;
     /**
      * Map object between peer id and piece requested time.
      */
-    public static Map<Integer, Long> requestTime = new HashMap<Integer, Long>();
+    public static Map<Integer, Long> requestTime = Collections.synchronizedMap(new HashMap<Integer, Long>());
 
     /**
      * Map object between peer id and download time.
      */
-    public static Map<Integer, Long> downloadTime = new HashMap<Integer, Long>();
+    public static Map<Integer, Long> downloadTime = Collections.synchronizedMap(new HashMap<Integer, Long>());
 
     /**
      * Downloading Rate from this peer. Initially set to 0.
      */
     private long downloadingRate = 0;
 
-    public long getDownloadingRate() {
+    public synchronized long getDownloadingRate() {
         return downloadingRate;
     }
 
-    public void setDownloadingRate(final long d) {
+    public synchronized void setDownloadingRate(final long d) {
         downloadingRate = -d;
     }
 
@@ -85,11 +81,11 @@ public class Peer {
 
     private int requestedIndex;
 
-    public void setRequestedIndex(final int i) {
+    public synchronized  void setRequestedIndex(final int i) {
         requestedIndex = i;
     }
 
-    public int getRequestedIndex() {
+    public synchronized  int getRequestedIndex() {
         return requestedIndex;
     }
 
@@ -97,19 +93,24 @@ public class Peer {
         this.id = id;
     }
 
-    public int getId() {
+    public synchronized int getId() {
         return id;
     }
 
     /**
      * Bitfields corresponding to a data file that is being shared.
      */
+
+    private final static byte[] globadlBitfield;
+
+    public static byte[] getGlobadlBitfield() {
+        return globadlBitfield;
+    }
+
     private final static byte[] myBitfield;
 
-    public static byte[] getMyBitField() {
-        synchronized (myBitfield) {
-            return myBitfield;
-        }
+    public static synchronized byte[] getMyBitField() {
+        return myBitfield;
     }
 
 
@@ -143,32 +144,26 @@ public class Peer {
         return bitFieldRequested;
     }
 
-    public static void setMyBitFieldRequested(int index, int i) {
-        synchronized (myBitfield) {
-            int in = index;
-            int pos = i;
-            myBitfield[index] |= (1 << (7 - i));
-        }
+    public static synchronized void setMyBitFieldIndx(int index, int i) {
+        //int in = index;
+        //int pos = i;
+        myBitfield[index] |= (1 << (7 - i));
     }
 
-    public static void setBitFieldRequested(int index, int indexFromRight) {
-        synchronized (bitFieldRequested) {
-            int in = index;
-            int pos = indexFromRight;
-            bitFieldRequested[index] |= (1 << indexFromRight);
-            Byte b = new Byte(bitFieldRequested[index]);
+    public static synchronized void setPieceIndxRequested(int index, int indexFromRight) {
+        //int in = index;
+        //int pos = indexFromRight;
+        bitFieldRequested[index] |= (1 << indexFromRight);
+        //Byte b = new Byte(bitFieldRequested[index]);
 //            System.out.println("b.intValue() = " + b.intValue());
-        }
     }
 
-    public static void removeSetBitFieldRequested(int index, int indexFromLeft) {
-        synchronized (bitFieldRequested) {
-            int in = index;
-            int pos = indexFromLeft;
-            bitFieldRequested[index] &= ~(1 << (7 - indexFromLeft));
-            Byte b = new Byte(bitFieldRequested[index]);
+    public static synchronized  void resetPieceIndexRequested(int index, int indexFromLeft) {
+        //int in = index;
+        //int pos = indexFromLeft;
+        bitFieldRequested[index] &= ~(1 << (7 - indexFromLeft));
+        // Byte b = new Byte(bitFieldRequested[index]);
 //            System.out.println("b.intValue() = " + b.intValue());
-        }
     }
 
     /**
@@ -197,6 +192,7 @@ public class Peer {
         }
         double bl = Math.ceil(noOfPieces / 8.0f);
         myBitfield = new byte[(int) bl];
+        globadlBitfield = new byte[(int) bl];
 
         bitFieldRequested = new byte[(int) bl];
         dataShared = new byte[Integer.parseInt(Configuration.getComProp().get("FileSize"))];
@@ -234,6 +230,18 @@ public class Peer {
                     numOfBitsToBeSetTo1InLastByte--;
                 }
             }
+        }else {
+            if (noOfPieces % 8.0 == 0) {
+                Arrays.fill(globadlBitfield, (byte) 255);
+            } else {
+                int numOfBitsToBeSetTo1InLastByte = (int) noOfPieces % 8;
+                Arrays.fill(globadlBitfield, (byte) 255); // set all to 1
+                globadlBitfield[globadlBitfield.length - 1] = 0; // set last byte to 0
+                while (numOfBitsToBeSetTo1InLastByte != 0) {
+                    globadlBitfield[globadlBitfield.length - 1] |= (1 << (8 - numOfBitsToBeSetTo1InLastByte));
+                    numOfBitsToBeSetTo1InLastByte--;
+                }
+            }
         }
 
     }
@@ -242,12 +250,12 @@ public class Peer {
     private OutputStream out = null;
     private InputStream in = null;
 
-	/*
+   /*
      * BufferedReader buffReader = new BufferedReader(new
-	 * InputStreamReader(socket.getInputStream())); ){ String input, output;
-	 * while((input = buffReader.readLine()) != null){
-	 * System.out.println(input); if(input.equals("Bye")) break; }
-	 */
+    * InputStreamReader(socket.getInputStream())); ){ String input, output;
+    * while((input = buffReader.readLine()) != null){
+    * System.out.println(input); if(input.equals("Bye")) break; }
+    */
 
     public Peer(Socket s) {
         this.socket = s;
@@ -274,7 +282,7 @@ public class Peer {
         this.close();
     }
 
-    public void sendHandshakeMsg() {
+    public synchronized void sendHandshakeMsg() {
         synchronized (map) {
             // now send handshake to this peer
             byte[] concatenateByteArrays = Util.concatenateByteArrays(Util
@@ -293,7 +301,7 @@ public class Peer {
 
     }
 
-    public int receiveHandshakeMsg() {
+    public synchronized int receiveHandshakeMsg() {
         try {
             byte[] b = new byte[32];
             in.read(b);
@@ -319,7 +327,7 @@ public class Peer {
     }
 
     // Sends a Message of type Bitfiled
-    public void sendBitfieldMsg() {
+    public synchronized void sendBitfieldMsg() {
         try {
             byte[] myBitField = getMyBitField();
             byte[] actualMessage = MessagesUtil.getActualMessage(myBitField,
@@ -333,12 +341,12 @@ public class Peer {
         }
     }
 
-    public synchronized  void updateBitFieldMsg(int pieceIndex) {
+    public synchronized  void updatePeerBitFieldMsg(int pieceIndex) {
         int posi = 7 - (pieceIndex % 8);
         peerBitFieldMsg[pieceIndex / 8] |= (1 << posi);
     }
 
-    public synchronized void readBitfieldMsg() {
+    public synchronized void readPeerBitfieldMsg() {
         peerBitFieldMsg = MessagesUtil.readActualMessage(in,
                 Constants.ActualMessageTypes.BITFIELD);
     }
@@ -349,7 +357,7 @@ public class Peer {
 
     // TODO: Test this function
     // logger in thread
-    public boolean isInterested() {
+    public synchronized boolean isInterested() {
         // me xor peer
         // result & ~me
         // if not 0 then interested
@@ -375,8 +383,8 @@ public class Peer {
     }
 
     // Sends a Message of type Interesed
-    public void sendInterestedMsg() {
-        System.out.println("Sending interested message ");
+    public synchronized void sendInterestedMsg() {
+        //System.out.println("Sending interested message ");
         byte[] actualMessage = MessagesUtil
                 .getActualMessage(Constants.ActualMessageTypes.INTERESTED);
         try {
@@ -390,7 +398,7 @@ public class Peer {
     }
 
     // Sends a Message of type NotInterested
-    public void sendNotInterestedMsg() {
+    public synchronized void sendNotInterestedMsg() {
         byte[] actualMessage = MessagesUtil
                 .getActualMessage(Constants.ActualMessageTypes.NOT_INTERESTED);
         try {
@@ -404,7 +412,7 @@ public class Peer {
     }
 
     // Sends a Message of type Have
-    public void sendHaveMsg(int pieceIndex) {
+    public synchronized void sendHaveMsg(int pieceIndex) {
         byte[] actualMessage = MessagesUtil.getActualMessage(
                 Util.intToByteArray(pieceIndex),
                 Constants.ActualMessageTypes.HAVE);
@@ -457,7 +465,7 @@ public class Peer {
     }
 
     // Sends a Message of type Request
-    public void sendRequestMsg(int pieceIndex) {
+    public synchronized void sendRequestMsg(int pieceIndex) {
         if (pieceIndex >= 0) {
             byte[] pieceIndexByteArray = Util.intToByteArray(pieceIndex);
 
@@ -476,7 +484,7 @@ public class Peer {
     }
 
     // Sends a Message of type Piece
-    public void sendPieceMsg(int pieceIndex) {
+    public synchronized void sendPieceMsg(int pieceIndex) {
         int pI = pieceIndex;
         int stdPieceSize = Integer.parseInt(Configuration.getComProp().get(
                 "PieceSize"));
@@ -514,41 +522,46 @@ public class Peer {
     }
 
     // TODO: Test this function
-    public int getNextBitFieldIndexToRequest() {
+    public synchronized int getNextBitFieldIndexToRequest() {
         // request a piece that I do not have and have not requested from other
         // neighbors, selection
         // of piece should happen randomly
-        byte[] bitFieldReq = getBitFieldRequested();
-        byte[] notBytesIndex = new byte[peerBitFieldMsg.length]; // to store bytes that I don't have
+        byte[] reqstdUntilnow = getBitFieldRequested();
+        byte[] ntHavendNtReqst = new byte[peerBitFieldMsg.length]; // to store bytes that I don't have
         byte[] bitFieldReqAndHave = new byte[peerBitFieldMsg.length];
 //        System.out.println("peerBitfield length " + peerBitFieldMsg.length);
-//        System.out.println("bitFieldReq[bitFieldReq.length - 1] = " + bitFieldReq[bitFieldReq.length - 1]);
-//        System.out.println("notBytesIndex[notBytesIndex.length - 1] = " + notBytesIndex[notBytesIndex.length - 1]);
+//        System.out.println("reqstdUntilnow[reqstdUntilnow.length - 1] = " + reqstdUntilnow[reqstdUntilnow.length - 1]);
+//        System.out.println("ntHavendNtReqst[ntHavendNtReqst.length - 1] = " + ntHavendNtReqst[ntHavendNtReqst.length - 1]);
 //        System.out.println("bitFieldReqAndHave[bitFieldReqAndHave.length - 1] = " + bitFieldReqAndHave[bitFieldReqAndHave.length - 1]);
         byte[] mybitfield = getMyBitField();
-        for (int i = 0; i < bitFieldReq.length; i++) {
-            bitFieldReqAndHave[i] = (byte) (bitFieldReq[i] | mybitfield[i]);
+        System.out.println("Arrays.toString(reqstdUntilnow) = " + Arrays.toString(reqstdUntilnow));
+        for (int i = 0; i < reqstdUntilnow.length; i++) {
+            bitFieldReqAndHave[i] = (byte) (reqstdUntilnow[i] & mybitfield[i]);
         }
 //        System.out.println("bitFieldReqAndHave[bitFieldReqAndHave.length - 1] = " + bitFieldReqAndHave[bitFieldReqAndHave.length - 1]);
         // determine bits I dont have.
         for (int i = 0; i < bitFieldReqAndHave.length; i++) {
-            notBytesIndex[i] = (byte) ((bitFieldReqAndHave[i] ^ peerBitFieldMsg[i]) & ~bitFieldReqAndHave[i]);
+            ntHavendNtReqst[i] = (byte) ((bitFieldReqAndHave[i] ^ peerBitFieldMsg[i]) & ~bitFieldReqAndHave[i]);
         }
-      /*  System.out.println("notBytesIndex[notBytesIndex.length - 1] = " + notBytesIndex[notBytesIndex.length - 1]);
+        System.out.println("Arrays.toString(peerBitFieldMsg) = " + Arrays.toString(peerBitFieldMsg));
+        System.out.println("Arrays.toString(getMyBitField()) = " + Arrays.toString(getMyBitField()));
+        System.out.println("Arrays.toString(bitFieldReqAndHave) = " + Arrays.toString(bitFieldReqAndHave));
+        System.out.println("Arrays.toString(ntHavendNtReqst) = " + Arrays.toString(ntHavendNtReqst));
+      /*  System.out.println("ntHavendNtReqst[ntHavendNtReqst.length - 1] = " + ntHavendNtReqst[ntHavendNtReqst.length - 1]);
         System.out.println("myBitfield[myBitfield.length - 1] = " + myBitfield[myBitfield.length - 1]);
         System.out.println("peerBitFieldMsg[peerBitFieldMsg.length - 1] = " + peerBitFieldMsg[peerBitFieldMsg.length - 1]);*/
 
         int count = 0;
         int pos = 0;
-        for (int i = 0; i < notBytesIndex.length; i++) {
+        for (int i = 0; i < ntHavendNtReqst.length; i++) {
             count = 8 * i;
-            byte temp = notBytesIndex[i];
+            byte temp = ntHavendNtReqst[i];
             Byte b = new Byte(temp);
 
             pos = 0;
             while (temp != 0 && pos < 8) {
                 if ((temp & (1 << pos)) != 0) {
-                    setBitFieldRequested(i, pos);
+                    setPieceIndxRequested(i, pos);
                     pos = 7 - pos;
                     int index = count + pos;
                     setRequestedIndex(index);
@@ -559,6 +572,7 @@ public class Peer {
             }
         }
 
+        System.out.println("Arrays.toString(myBitField) = " + Arrays.toString(getMyBitField()));
         return -1;
     }
 }

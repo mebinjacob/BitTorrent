@@ -1,15 +1,14 @@
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * @author Mebin Jacob
@@ -131,6 +130,7 @@ public class peerProcess {
             @Override
             public void run() {
                 byte[] myBitField = Peer.getMyBitField();
+                System.out.println("Arrays.toString(myBitField) = " + Arrays.toString(myBitField));
                 if (peersList.size() > 0) {
                     boolean shutDown = true;
                     for (PeerThread p : peersList) {
@@ -147,6 +147,10 @@ public class peerProcess {
                             p.interrupt();
 //                            listening = false; // to stop listening for socket connection
                         }
+
+                        //lets write it to a file
+
+
                         scheduler.shutdown();
                         if (!scheduler.isShutdown()) {
                             System.out.println("Shutdown nahi hua");
@@ -182,21 +186,26 @@ public class peerProcess {
                 System.out.println("size = " + size);
 //                int randIndex = Util.getRandInt(0, chokeList.size()-1);
                 if (size != 0) {
+                    System.out.println("Remember peer selected should come after this---");
                     int randIndex = ThreadLocalRandom.current().nextInt(0, size);
+                    Peer peer = chokeList.remove(randIndex);
+                    System.out.println("selecting an optimistcally neighbor");
                     System.out.println("randIndex = " + randIndex);
-                    Peer peer = chokeList.get(randIndex);
+                    System.out.println("Peer selected is " + peer.getId());
                     if (peer != null && peer != previousOptimisticallyUnchokedPeer) {
+                        System.out.println("selecting a new  optimistcally neighbor");
                         peer.setOptimisticallyUnchoked(true);
                         peer.sendUnChokeMsg();
                         if (previousOptimisticallyUnchokedPeer != null) {
                             previousOptimisticallyUnchokedPeer.setOptimisticallyUnchoked(false);
                             if (previousOptimisticallyUnchokedPeer.isChoked()) {
+                                System.out.println("Sending Choke msg from Optimistcally");
                                 peer.sendChokeMsg();
                             }
                         }
                         previousOptimisticallyUnchokedPeer = peer;
-                        log("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
-                        System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + randIndex);
+                        log("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + "Peer " + Peer.myId);
+                        System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + "Peer " + Peer.myId);
                     }
                 }
 
@@ -209,7 +218,7 @@ public class peerProcess {
 
     public void log(String msg) {
         Logger logger = LOGGER;
-        if(logger == null){
+        if (logger == null) {
             logger = MyLogger.getMyLogger();
         }
         logger.info(msg);
@@ -230,57 +239,53 @@ public class peerProcess {
 
                     // Select k preferred neighbours, when it has all elements too
                     // it should be taken care of..
-                    PriorityBlockingQueue<Peer> interestedList = Peer.interestedNeighboursinMe;
+                    List<Peer> interestedList = Peer.interestedNeighboursinMe;
+                    Collections.sort(interestedList, new PeerComparator<Peer>());
                     // select k which has highest download rate
-                    Iterator<Peer> iterator = interestedList.iterator();
-                    unchokeList = new ArrayList<Peer>();
-                    chokeList = Collections.synchronizedList(new ArrayList<Peer>());
-                    int count = k;
+                    if (interestedList != null) {
+                        System.out.println("Interested list size is " + interestedList.size());
+                        Iterator<Peer> iterator = interestedList.iterator();
+                        unchokeList = Collections.synchronizedList(new ArrayList<Peer>());
+                        chokeList = Collections.synchronizedList(new ArrayList<Peer>());
+                        int count = k;
 
-                    StringBuffer listOfUnchokedNeighbours = new StringBuffer(" ");
-                    while (iterator.hasNext()) {
-                        Peer next = iterator.next();
-                        if (next.isInitialized()) {
-                            if (count > 0) {
-                                System.out.println("peerProcess.run unchoked " + next.getId());
-                                unchokeList.add(next);
-                                listOfUnchokedNeighbours.append(next.getId() + ",");
-                            } else {
-                                System.out.println("peerProcess.run choked " + next.getId());
-                                chokeList.add(next);
+                        StringBuffer listOfUnchokedNeighbours = new StringBuffer(" ");
+                        while (iterator.hasNext()) {
+                            Peer next = iterator.next();
+                            if (next.isInitialized()) {
+                                if (count > 0) {
+                                    System.out.println("peerProcess.run unchoked " + next.getId());
+                                    unchokeList.add(next);
+                                    if (next.isChoked()) {
+                                        next.setChoked(false);
+                                        if (!next.isOptimisticallyUnchoked()) {
+                                            System.out.println("Sending  unchoking msg " + next.getId());
+                                            next.sendUnChokeMsg(); // now expect recieve message
+                                            //p.setChoked(false);
+                                        }
+                                    }
+                                    listOfUnchokedNeighbours.append(next.getId() + ",");
+                                } else {
+                                    System.out.println("peerProcess.run choked " + next.getId());
+                                    chokeList.add(next);
+                                    if (!next.isChoked()) {
+                                        next.setChoked(true);
+                                        if (!next.isOptimisticallyUnchoked()) {
+                                            System.out.println("Sending  choke msg " + next.getId());
+                                            next.sendChokeMsg();
+                                        }
+                                    }
+                                }
                             }
-
+                            count--;
                         }
 
-                        count--;
-                    }
-                    String neigh = listOfUnchokedNeighbours.toString();
-                    if(!neigh.trim().isEmpty()){
-                        log("Peer " + Peer.myId + " has the preferred neighbors " + neigh);
-                    }
-                    System.out.println(listOfUnchokedNeighbours.toString());
-                    for (Peer p : unchokeList) {
-                        System.out.println("Inside unchoked list");
-                        if (p.isChoked()) {
-                            p.setChoked(false);
-                            if (!p.isOptimisticallyUnchoked()) {
-                                System.out.println("inside unchoking");
-                                p.sendUnChokeMsg(); // now expect recieve message
-                                //p.setChoked(false);
-                            }
+                        String neigh = listOfUnchokedNeighbours.toString();
+                        if (!neigh.trim().isEmpty()) {
+                            log("Peer " + Peer.myId + " has the preferred neighbors " + neigh);
                         }
 
                     }
-
-                    for (Peer p : chokeList) {
-                        if (!p.isChoked()) {
-                            p.setChoked(true);
-                            if (!p.isOptimisticallyUnchoked()) {
-                                p.sendChokeMsg();
-                            }
-                        }
-                    }
-
                 }
             };
             final ScheduledFuture<?> kNeighborDeterminerHandle = scheduler

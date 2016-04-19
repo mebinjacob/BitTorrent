@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
@@ -58,13 +59,13 @@ public class PeerThread extends Thread {
             public void run() {
                 System.out.println("Peerconnected is initialized " + peerConnected.isInitialized());
                 peerConnected.sendBitfieldMsg();
-                peerConnected.readBitfieldMsg();
+                peerConnected.readPeerBitfieldMsg();
 
                 if (peerConnected.isInterested()) {
-                    System.out.println("Sending interested msg ");
+                    System.out.println("Sending interested msg to  " + peerConnected.getId());
                     peerConnected.sendInterestedMsg();
                 } else {
-                    System.out.println("Sending not interested msg ");
+                    System.out.println("Sending not interested msg to " + peerConnected.getId());
                     peerConnected.sendNotInterestedMsg();
                 }
 
@@ -100,176 +101,216 @@ public class PeerThread extends Thread {
         System.out.println("peerConnected.isInitialized() = " + peerConnected.isInitialized());
         System.out.println("The id for initialization is " + peerConnected.getId());
         System.out.println("Initializaed completed!!");
-            try {
-                InputStream inputStream = new BufferedInputStream(socket.getInputStream());
-                while (!isStop()) {
-                    byte[] msgBytesStat = new byte[5];
-                    msgBytesStat = Util.readBytes(inputStream, msgBytesStat, 5);
+        try {
+            InputStream inputStream = new BufferedInputStream(socket.getInputStream());
+            while (!isStop()) {
+                byte[] msgBytesStat = new byte[5];
+                msgBytesStat = Util.readBytes(inputStream, msgBytesStat, 5);
 //                inputStream.read(msgBytesStat);
-                    Constants.ActualMessageTypes msgType = MessagesUtil
-                            .getMsgType(msgBytesStat);
-                    switch (msgType) {
-                        case BITFIELD:
-                            // sent initially
-                            // should be handled in acceptConnection
-                            break;
-                        case HAVE:
-                            System.out.println("Have msg received from " + peerConnected.getId());
-                            byte[] readPieceIndexBytes = new byte[4];
+                Constants.ActualMessageTypes msgType = MessagesUtil
+                        .getMsgType(msgBytesStat);
+                switch (msgType) {
+                    case BITFIELD:
+                        // sent initially
+                        // should be handled in acceptConnection
+                        break;
+                    case HAVE:
+                        System.out.println("Have msg received from " + peerConnected.getId());
+                        byte[] readPieceIndexBytes = new byte[4];
 //                        inputStream.read(readPieceIndexBytes);
-                            readPieceIndexBytes = Util.readBytes(inputStream, readPieceIndexBytes, 4);
-                            int pieceIndex = Util.byteArrayToInt(readPieceIndexBytes);
-                            //int byteIndex = pieceIndex / 8;
-                            //int position = pieceIndex % 8;
-                            //position = 7-position;
-                            byte[] myBitField = Peer.getMyBitField();
-                            byte myByte = myBitField[pieceIndex / 8];
+                        readPieceIndexBytes = Util.readBytes(inputStream, readPieceIndexBytes, 4);
+                        int pieceIndex = Util.byteArrayToInt(readPieceIndexBytes);
+                        //int byteIndex = pieceIndex / 8;
+                        //int position = pieceIndex % 8;
+                        //position = 7-position;
+                        byte[] myBitField = Peer.getMyBitField();
+                        byte myByte = myBitField[pieceIndex / 8];
 
-                            if ((myByte & (1 << (7 - (pieceIndex % 8)))) == 0) {
-                                // I don't have this piece
-                                peerConnected.sendInterestedMsg();
-                            }
-                            peerConnected.updateBitFieldMsg(pieceIndex);
-                            LOGGER.info("Peer " + Peer.myId
-                                    + " received the have message from " + peerConnected.getId());
-                            break;
-                        case CHOKE:
-                            System.out.println("choke msg received from " + peerConnected.getId());
+                        if ((myByte & (1 << (7 - (pieceIndex % 8)))) == 0) {
+                            // I don't have this piece
+                            peerConnected.sendInterestedMsg();
+                        }
+                        peerConnected.updatePeerBitFieldMsg(pieceIndex);
+                        LOGGER.info("Peer " + Peer.myId
+                                + " received the have message from " + peerConnected.getId());
+                        break;
+                    case CHOKE:
+                        System.out.println("choke msg received from " + peerConnected.getId());
 
-                            int requestedIndex = peerConnected.getRequestedIndex();
-                            // remove from requestedIndex
-                            Peer.removeSetBitFieldRequested(requestedIndex / 8,
+                        int requestedIndex = peerConnected.getRequestedIndex();
+                        // remove from requestedIndex
+                        byte[] myBitfield = Peer.getMyBitField();
+                        byte myidxByte = myBitfield[requestedIndex / 8];
+
+                        if ((myidxByte & (1 << (7 - (requestedIndex % 8)))) == 0) {
+                            // I don't have this piece
+                            Peer.resetPieceIndexRequested(requestedIndex / 8,
                                     requestedIndex % 8);
-                            Peer.peersChokedMeMap.put(peerConnected.getId(), peerConnected);
-                            //Peer.peersChokedMeMap.remove(peerConnected.getId());
-                            LOGGER.info("Peer " + Peer.myId + " is choked by "
-                                    + peerConnected.getId());
-                            break;
-                        case INTERESTED:
-                            System.out.println("interested msg received " + peerConnected.getId());
-                            System.out.println(peerConnected.getId());
-                            boolean isPresent = false;
-                            for(Peer p : Peer.interestedNeighboursinMe){
-                                if(p.getId() == peerConnected.getId()){
-                                    isPresent = true;
-                                }
+                        }
+
+                        Peer.peersChokedMeMap.put(peerConnected.getId(), peerConnected);
+                        //Peer.peersChokedMeMap.remove(peerConnected.getId());
+                        LOGGER.info("Peer " + Peer.myId + " is choked by "
+                                + peerConnected.getId());
+                        break;
+                    case INTERESTED:
+                        System.out.println("interested msg received " + peerConnected.getId());
+                        System.out.println(peerConnected.getId());
+                        boolean isPresent = false;
+                        for(Peer p : Peer.interestedNeighboursinMe){
+                            if(p.getId() == peerConnected.getId()){
+                                isPresent = true;
                             }
-                            if(!isPresent){
-                                Peer.interestedNeighboursinMe.add(peerConnected);
-                            }
-                            //Peer.interestedNeighboursinMe.add(peerConnected);
-                            LOGGER.info("Peer " + Peer.myId
-                                    + " received the interested message from "
-                                    + peerConnected.getId());
-                            break;
-                        case NOT_INTERESTED:
-                            System.out.println("not interested msg received "  + peerConnected.getId());
-                            Peer.notInterestedNeighboursinMe.put(peerConnected.getId(), peerConnected);
-                            LOGGER.info("Peer " + Peer.myId
-                                    + " received the not interested message from "
-                                    + peerConnected.getId());
-                            break;
-                        case PIECE:
-                            System.out.println("piece msg received "  + peerConnected.getId());
-                            byte[] sizeByteArray = new byte[4];
-                            for (int i = 0; i < 4; i++) {
-                                sizeByteArray[i] = msgBytesStat[i];
-                            }
-                            int sizeOfMsg = Util.byteArrayToInt(sizeByteArray);
-                            byte[] pieceIndexBytes = new byte[4];
-                            pieceIndexBytes = Util.readBytes(inputStream, pieceIndexBytes, 4);
+                        }
+                        if(!isPresent){
+                            Peer.interestedNeighboursinMe.add(peerConnected);
+                        }
+                        //Peer.interestedNeighboursinMe.add(peerConnected);
+                        LOGGER.info("Peer " + Peer.myId
+                                + " received the interested message from "
+                                + peerConnected.getId());
+                        break;
+                    case NOT_INTERESTED:
+                        System.out.println("not interested msg received "  + peerConnected.getId());
+                        Peer.interestedNeighboursinMe.remove(peerConnected);
+                        peerConnected.setChoked(true);
+                        Peer.notInterestedNeighboursinMe.put(peerConnected.getId(), peerConnected);
+                        LOGGER.info("Peer " + Peer.myId
+                                + " received the not interested message from "
+                                + peerConnected.getId());
+                        break;
+                    case PIECE:
+                        System.out.println("piece msg received "  + peerConnected.getId());
+                        byte[] sizeByteArray = new byte[4];
+                        for (int i = 0; i < 4; i++) {
+                            sizeByteArray[i] = msgBytesStat[i];
+                        }
+                        int sizeOfMsg = Util.byteArrayToInt(sizeByteArray);
+                        byte[] pieceIndexBytes = new byte[4];
+                        pieceIndexBytes = Util.readBytes(inputStream, pieceIndexBytes, 4);
 //                        inputStream.read(pieceIndexBytes);
-                            int sizeOfPieceMsg = sizeOfMsg - 1;
-                            int sizeOfPiecePayLoad = sizeOfPieceMsg - 4;
-                            byte[] piece = new byte[sizeOfPiecePayLoad];
-                            piece = Util.readBytes(inputStream, piece, sizeOfPiecePayLoad);
+                        int sizeOfPieceMsg = sizeOfMsg - 1;
+                        int sizeOfPiecePayLoad = sizeOfPieceMsg - 4;
+                        byte[] piece = new byte[sizeOfPiecePayLoad];
+                        piece = Util.readBytes(inputStream, piece, sizeOfPiecePayLoad);
 //                        inputStream.read(piece);
-                            Long downTime = System.nanoTime()
-                                    - Peer.requestTime.get(peerConnected.getId());
+                        Long downTime = System.nanoTime()
+                                - Peer.requestTime.get(peerConnected.getId());
 
-                            Peer.downloadTime.put(peerConnected.getId(), downTime);
-                            peerConnected.setDownloadingRate(downTime);
-                            int pieceI = Util.byteArrayToInt(pieceIndexBytes);
-                            System.out.println("The piece index value is " + pieceI);
-                            int stdPieceSize = Integer.parseInt(Configuration
-                                    .getComProp().get("PieceSize"));
-                            for (int i = 0; i < sizeOfPiecePayLoad; i++) {
-                                Peer.dataShared[pieceI * stdPieceSize + i] = piece[i];
-                            }
-                            LOGGER.info("Peer " + Peer.myId
-                                    + " has downloaded the piece " + pieceI + " from "
-                                    + peerConnected.getId());
+                        Peer.downloadTime.put(peerConnected.getId(), downTime);
+                        peerConnected.setDownloadingRate(downTime);
+                        System.out.println("The downloading time set is " + downTime);
+                        int pieceI = Util.byteArrayToInt(pieceIndexBytes);
+                        System.out.println("The piece index value is " + pieceI +"from " + peerConnected.getId());
+                        int stdPieceSize = Integer.parseInt(Configuration
+                                .getComProp().get("PieceSize"));
+                        for (int i = 0; i < sizeOfPiecePayLoad; i++) {
+                            Peer.dataShared[pieceI * stdPieceSize + i] = piece[i];
+                        }
+                        LOGGER.info("Peer " + Peer.myId
+                                + " has downloaded the piece " + pieceI + " from "
+                                + peerConnected.getId());
 
-                            // send have message to rest of the peers
-                            int index = pieceI / 8;
-                            int pos = pieceI % 8;
-                            Peer.setMyBitFieldRequested(index, pos);
-                            Peer.removeSetBitFieldRequested(index, pos);
-                            for (PeerThread peerThread : peerProcess.peersList) {
-                                System.out.println("Reached Inside Piece Have check ");
-                                //if (peerThread.getPeer() == peerConnected) {
-                                System.out.println("Check Passed Sending Have Message ");
-                                peerThread.getPeer().sendHaveMsg(pieceI);
-                                //}
-                            }
-                            int i = peerConnected.getNextBitFieldIndexToRequest();
-                            System.out.println("next index requested is " + i);
-                            if (i != -1
-                                    && Peer.peersUnchokedMeMap.containsKey(peerConnected.getId())) {
-                                System.out.println("Yes its being requested" + i);
-                                peerConnected.sendRequestMsg(i);
-                            }
-                            if (i == -1) {
-                                //lets write it to a file
-                                File file = new File(Configuration.getComProp().get("FileName"));
-                                try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-                                    fileOutputStream.write(Peer.dataShared);
-                                }
+                        // send have message to rest of the peers
+                        int index = pieceI / 8;
+                        int pos = pieceI % 8;
+                        Peer.setMyBitFieldIndx(index, pos);
+                        Peer.resetPieceIndexRequested(index, pos);
+                        for (PeerThread peerThread : peerProcess.peersList) {
+                            System.out.println("Reached Inside Piece Have check ");
+                            //if (peerThread.getPeer() == peerConnected) {
+                            System.out.println("Check Passed Sending Have Message ");
+                            peerThread.getPeer().sendHaveMsg(pieceI);
+                            //}
+                        }
+                        int nxtidx = peerConnected.getNextBitFieldIndexToRequest();
+                        System.out.println("next index requested is " + nxtidx +"from " + peerConnected.getId());
+                        if (nxtidx != -1
+                                && Peer.peersUnchokedMeMap.containsKey(peerConnected.getId())) {
+                            System.out.println("Yes its being requested" + nxtidx);
+                            peerConnected.sendRequestMsg(nxtidx);
+                        }
+                        System.out.println("piece peer Bit field msg = " + Arrays.toString(peerConnected.getPeerBitFieldMsg()));
+                        System.out.println("piece my bit field msg = " + Arrays.toString(Peer.getMyBitField()));
+                        if(nxtidx == -1){
+                            System.out.println("bit fields are equal" + peerConnected.getId() );
+                            peerConnected.sendNotInterestedMsg();
+                        }
+                        if(nxtidx == -1 && !(Arrays.equals(peerConnected.getMyBitField(), peerConnected.getPeerBitFieldMsg())))
+                        {
+                            System.out.println("bit fields are not  equal" + peerConnected.getId() );
+                            peerConnected.sendInterestedMsg();
+                        }
 
+                        if(nxtidx == -1 && Arrays.equals(Peer.getMyBitField(), Peer.getGlobadlBitfield())){
+                            System.out.println("Creating the file");
+                            File file = new File(Configuration.getComProp().get("FileName"));
+                            try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+                                fileOutputStream.write(Peer.dataShared);
+                            } catch (IOException e) {
+                                System.out.println("shutdown called !! -- file create");
+                                e.printStackTrace();
                             }
-                            break;
-                        case REQUEST:
-                            System.out.println("req msg received " +  peerConnected.getId());
-                            byte[] ind = new byte[4];
-                            inputStream.read(ind);
-                            int pIndex = Util.byteArrayToInt(ind);
-                            System.out.println("unscrew it dude!!!");
-                            if (!peerConnected.isChoked()) {
-                                System.out.println("sending piece message from request the piece index requested is " + pIndex);
-                                peerConnected.sendPieceMsg(pIndex);
-                            }
-                            // in request the id will be returned
-                            // send piece msg if in unchoked list
-                            break;
-                        case UNCHOKE:
-                            System.out.println("unchoke msg rec " +   peerConnected.getId());
-                            Peer.peersUnchokedMeMap.put(peerConnected.getId(), peerConnected);
-                            // request a piece that I do not have and have not requested
-                            // from other neighbors, selection
-                            // of piece should happen randomly
-                            LOGGER.info("Peer " + Peer.myId + " is unchoked by "
-                                    + peerConnected.getId());
-                            int nextIndex = peerConnected.getNextBitFieldIndexToRequest();
-                            System.out.println("Next index requested " + nextIndex);
-                            if (nextIndex != -1) {
-                                peerConnected.sendRequestMsg(nextIndex);
-                            }
+                        }
 
-                            break;
-                        default:
-                            System.out.println("something was received");
-                    }
+                        break;
+                    case REQUEST:
+                        System.out.println("req msg received " +  peerConnected.getId());
+                        byte[] ind = new byte[4];
+                        inputStream.read(ind);
+                        int pIndex = Util.byteArrayToInt(ind);
+                        System.out.println("unscrew it dude!!!");
+                        if (!peerConnected.isChoked()) {
+                            System.out.println("sending piece message from request the piece index requested is " + pIndex);
+                            peerConnected.sendPieceMsg(pIndex);
+                        }
+                        // in request the id will be returned
+                        // send piece msg if in unchoked list
+                        break;
+                    case UNCHOKE:
+                        System.out.println("unchoke msg rec " +   peerConnected.getId());
+                        Peer.peersUnchokedMeMap.put(peerConnected.getId(), peerConnected);
+                        // request a piece that I do not have and have not requested
+                        // from other neighbors, selection
+                        // of piece should happen randomly
+                        LOGGER.info("Peer " + Peer.myId + " is unchoked by "
+                                + peerConnected.getId());
+                        int nextIndex = peerConnected.getNextBitFieldIndexToRequest();
+                        System.out.println("Next index requested " + nextIndex + "from " + peerConnected.getId());
+                        if (nextIndex != -1) {
+                            peerConnected.sendRequestMsg(nextIndex);
+                        }
+
+                        System.out.println("piece peer Bit field msg in unchoke  = " + Arrays.toString(peerConnected.getPeerBitFieldMsg()));
+                        System.out.println("piece my bit field msg in unchoke = " + Arrays.toString(Peer.getMyBitField()));
+
+                        if(nextIndex == -1){
+                            System.out.println("bit fields are equal in unchoke " + peerConnected.getId() );
+                            System.out.println("Sending Not interested");
+                            peerConnected.sendNotInterestedMsg();
+                        }
+
+                        if( nextIndex == -1 && !(Arrays.equals(peerConnected.getMyBitField(), peerConnected.getPeerBitFieldMsg())))
+                        {
+                            System.out.println("bit fields are not  equal in unchoke " + peerConnected.getId() );
+                            System.out.println("Sending interested");
+                            peerConnected.sendInterestedMsg();
+                        }
+
+                        break;
+                    default:
+                        System.out.println("something was received");
                 }
-
-            } catch (IOException e) {
-                if(!isStop()) {
-                    e.printStackTrace();
-                }
-            }finally {
-                System.out.println("Exiting!! " + peerConnected.getId());
-                initializeThread.interrupt();
             }
+
+        } catch (IOException e) {
+            if(!isStop()) {
+                e.printStackTrace();
+            }
+        }finally {
+            System.out.println("Exiting!! " + peerConnected.getId());
+            initializeThread.interrupt();
+        }
 
     }
 }
-
