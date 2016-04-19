@@ -57,7 +57,7 @@ public class Util {
         return result;
     }
 
-    public static byte[] readBytes(InputStream in, byte[] byteArray, int length) throws IOException {
+    public synchronized static byte[] readBytes(InputStream in, byte[] byteArray, int length) throws IOException {
         int len = length;
         int idx = 0;
         while (len != 0) {
