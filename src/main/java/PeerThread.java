@@ -14,7 +14,7 @@ public class PeerThread extends Thread {
     private boolean stop = false;
     private Peer peerConnected = null;
     private  Thread initializeThread = null;
-    public Peer getPeer() {
+    public synchronized Peer getPeer() {
         return peerConnected;
     }
 
@@ -309,7 +309,7 @@ public class PeerThread extends Thread {
             }
         }finally {
             System.out.println("Exiting!! " + peerConnected.getId());
-            initializeThread.interrupt();
+           // initializeThread.interrupt();
         }
 
     }
