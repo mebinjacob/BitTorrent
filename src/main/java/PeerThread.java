@@ -215,7 +215,7 @@ public class PeerThread extends Thread {
                         int index = pieceI / 8;
                         int pos = pieceI % 8;
                         Peer.setMyBitFieldIndx(index, pos);
-                        Peer.resetPieceIndexRequested(index, pos);
+//                        Peer.resetPieceIndexRequested(index, pos);
                         for (PeerThread peerThread : peerProcess.peersList) {
                             System.out.println("Reached Inside Piece Have check ");
                             //if (peerThread.getPeer() == peerConnected) {
