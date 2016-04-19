@@ -200,13 +200,22 @@ public class peerProcess {
                             previousOptimisticallyUnchokedPeer.setOptimisticallyUnchoked(false);
                             if (previousOptimisticallyUnchokedPeer.isChoked()) {
                                 System.out.println("Sending Choke msg from Optimistcally");
-                                peer.sendChokeMsg();
+                                previousOptimisticallyUnchokedPeer.sendChokeMsg();
                             }
                         }
                         previousOptimisticallyUnchokedPeer = peer;
                         log("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + "Peer " + Peer.myId);
                         System.out.println("Peer " + Peer.myId + " has the optimistically unchoked neighbor " + "Peer " + Peer.myId);
                     }
+                }else{
+                    if (previousOptimisticallyUnchokedPeer != null) {
+                        previousOptimisticallyUnchokedPeer.setOptimisticallyUnchoked(false);
+                        if (previousOptimisticallyUnchokedPeer.isChoked()) {
+                            System.out.println("Sending Choke msg from Optimistcally");
+                            previousOptimisticallyUnchokedPeer.sendChokeMsg();
+                        }
+                    }
+                    previousOptimisticallyUnchokedPeer = null;
                 }
 
             }
